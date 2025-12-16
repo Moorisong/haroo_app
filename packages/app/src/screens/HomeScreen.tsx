@@ -8,6 +8,7 @@ import {
     Alert,
     ScrollView,
     Dimensions,
+    TouchableOpacity,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { COLORS, FONT_SIZES, SPACING, FONTS } from '../constants/theme';
@@ -21,11 +22,12 @@ import { BubbleBackground } from '../components/BubbleBackground';
 interface HomeScreenProps {
     onRequest: () => void;
     onSend: () => void;
+    onReceive: () => void;
 }
 
 const { width, height } = Dimensions.get('window');
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ onRequest, onSend }) => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({ onRequest, onSend, onReceive }) => {
     // 테스트용 상태 - 실제로는 서버에서 받아옴
     const [status, setStatus] = useState<ConnectionStatus>('NONE');
     const [userId] = useState('haru_x9f3a2');
@@ -63,6 +65,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onRequest, onSend }) => 
                 <View style={styles.devTools}>
                     <Text style={styles.devLabel}>현재: {status}</Text>
                     <PrimaryButton title="상태 변경" onPress={cycleStatus} />
+                    {/* 추가된 개발용 버튼 */}
+                    <TouchableOpacity onPress={() => setStatus('EXPIRED')} style={styles.devButton}>
+                        <Text style={styles.devButtonText}>Expired</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={onReceive} style={styles.devButton}>
+                        <Text style={styles.devButtonText}>Receive</Text>
+                    </TouchableOpacity>
                 </View>
 
                 <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -291,5 +300,18 @@ const styles = StyleSheet.create({
     devLabel: {
         fontSize: FONT_SIZES.xs,
         color: COLORS.textTertiary,
+    },
+    devButton: {
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+        backgroundColor: '#EAEAEA',
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
+    devButtonText: {
+        fontSize: FONT_SIZES.xs,
+        color: COLORS.textPrimary,
+        fontWeight: 'bold',
     },
 });
