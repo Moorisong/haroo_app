@@ -13,6 +13,7 @@ const app = express();
 import { notFound, errorHandler } from './middlewares/errorMiddleware';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
+import modeRoutes from './routes/modeRoutes';
 
 // Middleware
 app.use(express.json());
@@ -24,6 +25,7 @@ app.use(morgan('dev'));
 // Routes
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
+app.use('/modes', modeRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {
