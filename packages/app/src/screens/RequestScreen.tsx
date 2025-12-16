@@ -9,32 +9,34 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { BubbleBackground } from '../components/BubbleBackground';
-
-interface RequestScreenProps {
-    onBack: () => void;
-}
+import { requestMode } from '../services/api';
+import { AxiosError } from 'axios';
 
 type Step = 'CHECK_ID' | 'SELECT_DURATION';
 type CheckStatus = 'IDLE' | 'AVAILABLE' | 'UNAVAILABLE';
 
-export const RequestScreen: React.FC<RequestScreenProps> = ({ onBack }) => {
+export const RequestScreen: React.FC = () => {
+    const navigation = useNavigation();
+
     const [step, setStep] = useState<Step>('CHECK_ID');
     const [targetId, setTargetId] = useState('');
     const [checkStatus, setCheckStatus] = useState<CheckStatus>('IDLE');
     const [selectedDuration, setSelectedDuration] = useState<1 | 3 | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleCheckId = () => {
         if (!targetId.trim()) {
             Alert.alert('알림', '상대방의 ID를 입력해주세요.');
             return;
         }
-        // TODO: 실제 API 연동
-        // 테스트를 위해 'fail'이 포함되면 불가, 그 외에는 가능으로 처리
+        // TODO: 실제 API 연동 (현재는 Mock 유지)
         if (targetId.toLowerCase().includes('fail')) {
             setCheckStatus('UNAVAILABLE');
         } else {
@@ -42,11 +44,27 @@ export const RequestScreen: React.FC<RequestScreenProps> = ({ onBack }) => {
         }
     };
 
-    const handleApply = () => {
+    const handleApply = async () => {
         if (!selectedDuration) return;
-        Alert.alert('신청 완료', `${targetId}님에게 ${selectedDuration}일간 메시지 모드를 신청했습니다.`, [
-            { text: '확인', onPress: onBack }
-        ]);
+
+        setIsSubmitting(true);
+        try {
+            await requestMode({
+                targetUserId: targetId,
+                duration: selectedDuration,
+            });
+
+            Alert.alert('신청 완료', `${targetId}님에게 메시지 모드를 신청했습니다.`, [
+                { text: '확인', onPress: () => navigation.goBack() }
+            ]);
+
+        } catch (error) {
+            const axiosError = error as AxiosError<{ message: string }>;
+            const message = axiosError.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
+            Alert.alert('신청 실패', message);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -55,7 +73,7 @@ export const RequestScreen: React.FC<RequestScreenProps> = ({ onBack }) => {
 
             {/* 헤더 */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Feather name="arrow-left" size={24} color={COLORS.textPrimary} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>메시지 모드 신청</Text>
@@ -84,9 +102,9 @@ export const RequestScreen: React.FC<RequestScreenProps> = ({ onBack }) => {
                                 value={targetId}
                                 onChangeText={(text) => {
                                     setTargetId(text);
-                                    setCheckStatus('IDLE'); // 입력 변경 시 상태 초기화
+                                    setCheckStatus('IDLE');
                                     setStep('CHECK_ID');
-                                    setSelectedDuration(null); // duration reset
+                                    setSelectedDuration(null);
                                 }}
                                 autoCapitalize="none"
                             />
@@ -142,9 +160,9 @@ export const RequestScreen: React.FC<RequestScreenProps> = ({ onBack }) => {
                                 </Text>
 
                                 <PrimaryButton
-                                    title="메시지 모드 신청하기"
+                                    title={isSubmitting ? "신청 중..." : "메시지 모드 신청하기"}
                                     onPress={handleApply}
-                                    disabled={!selectedDuration}
+                                    disabled={!selectedDuration || isSubmitting}
                                     style={styles.applyButton}
                                 />
                             </View>
@@ -203,7 +221,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 22,
-        fontFamily: FONTS.serif, // 명조
+        fontFamily: FONTS.serif,
         fontWeight: 'bold',
         color: COLORS.textPrimary,
         marginBottom: SPACING.sm,
@@ -246,7 +264,7 @@ const styles = StyleSheet.create({
     statusMessageUnavailable: {
         fontSize: FONT_SIZES.md,
         fontFamily: FONTS.bold,
-        color: '#E07878', // Error color (임시)
+        color: '#E07878',
         textAlign: 'center',
         lineHeight: 22,
     },
