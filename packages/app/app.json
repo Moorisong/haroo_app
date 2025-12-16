@@ -27,7 +27,8 @@
       "favicon": "./assets/haroo_logo.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-web-browser"
     ]
   }
 }
