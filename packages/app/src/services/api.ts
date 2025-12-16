@@ -3,14 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { Connection, User } from '../types';
 
-// Android Simulator/Emulator -> 10.0.2.2
-// iOS Simulator -> localhost
-// Web -> localhost
-const BASE_URL = Platform.select({
-    android: 'http://10.0.2.2:3000',
-    ios: 'http://localhost:3000',
-    default: 'http://localhost:3000',
-});
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const api = axios.create({
     baseURL: BASE_URL,
@@ -45,7 +38,6 @@ export const getCurrentMode = async (): Promise<Connection> => {
 
 export interface RequestModePayload {
     targetUserId: string;
-    duration: 1 | 3;
 }
 
 export const requestMode = async (payload: RequestModePayload): Promise<Connection> => {
@@ -54,7 +46,6 @@ export const requestMode = async (payload: RequestModePayload): Promise<Connecti
         return response.data;
     } catch (error) {
         console.error('Error requesting mode:', error);
-        // Re-throw the error so the component can handle it
         throw error;
     }
 };
@@ -75,6 +66,21 @@ export const getUserProfile = async (): Promise<User> => {
         return response.data;
     } catch (error) {
         console.error('Error fetching user profile:', error);
+        throw error;
+    }
+};
+
+export interface SendMessagePayload {
+    message: string;
+    duration: 1 | 3;
+}
+
+export const sendMessage = async (payload: SendMessagePayload): Promise<any> => {
+    try {
+        const response = await api.post('/messages', payload);
+        return response.data;
+    } catch (error) {
+        console.error('Error sending message:', error);
         throw error;
     }
 };

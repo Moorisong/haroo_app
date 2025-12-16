@@ -40,7 +40,6 @@ export const HomeScreen: React.FC = () => {
             setUser(userData);
         } catch (err) {
             setError('정보를 불러오는 데 실패했습니다. 다시 시도해 주세요.');
-            console.error(err);
         } finally {
             setIsLoading(false);
         }
@@ -85,7 +84,7 @@ export const HomeScreen: React.FC = () => {
             return <ActivityIndicator size="large" color={COLORS.primary} style={styles.centerContent} />;
         }
 
-        if (error || !connection || !user) {
+        if (error || !user) { // Removed !connection from this condition
             return (
                 <View style={styles.centerContent}>
                     <Text style={styles.errorText}>{error || '데이터를 불러올 수 없습니다.'}</Text>
@@ -93,7 +92,8 @@ export const HomeScreen: React.FC = () => {
             );
         }
 
-        const status = connection.status;
+        // If connection is null, default to 'NONE' status
+        const status = connection?.status || 'NONE';
 
         if (status === 'PENDING') {
             const isReceiver = user.id !== connection.requesterId;
