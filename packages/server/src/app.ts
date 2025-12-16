@@ -11,6 +11,7 @@ dotenv.config();
 const app = express();
 
 import { notFound, errorHandler } from './middlewares/errorMiddleware';
+import authRoutes from './routes/authRoutes';
 
 // Middleware
 app.use(express.json());
@@ -18,6 +19,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(helmet());
 app.use(morgan('dev'));
+
+// Routes
+app.use('/auth', authRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {
