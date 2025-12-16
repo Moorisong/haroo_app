@@ -1,4 +1,4 @@
-import { HomeScreen, LandingScreen, RequestScreen, SendScreen, ReceiveScreen } from './src/screens';
+import { HomeScreen, LandingScreen, RequestScreen, SendScreen, ReceiveScreen, SettingsScreen } from './src/screens';
 import {
   useFonts,
   NanumMyeongjo_400Regular,
@@ -13,7 +13,7 @@ import {
 import { ActivityIndicator, View } from 'react-native';
 import { useState, useEffect } from 'react';
 
-type Screen = 'HOME' | 'REQUEST' | 'SEND' | 'RECEIVE';
+type Screen = 'HOME' | 'REQUEST' | 'SEND' | 'RECEIVE' | 'SETTINGS';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -63,7 +63,13 @@ export default function App() {
         <SendScreen onBack={() => setCurrentScreen('HOME')} />
       )}
       {currentScreen === 'RECEIVE' && (
-        <ReceiveScreen onBack={() => setCurrentScreen('HOME')} />
+        <ReceiveScreen
+          onBack={() => setCurrentScreen('HOME')}
+          onSettings={() => setCurrentScreen('SETTINGS')}
+        />
+      )}
+      {currentScreen === 'SETTINGS' && (
+        <SettingsScreen onBack={() => setCurrentScreen('RECEIVE')} />
       )}
     </>
   );

@@ -14,9 +14,10 @@ import { BubbleBackground } from '../components/BubbleBackground';
 
 interface ReceiveScreenProps {
     onBack: () => void;
+    onSettings: () => void;
 }
 
-export const ReceiveScreen: React.FC<ReceiveScreenProps> = ({ onBack }) => {
+export const ReceiveScreen: React.FC<ReceiveScreenProps> = ({ onBack, onSettings }) => {
     // 테스트용 메시지 데이터
     const [message] = useState("오늘 하루는 어땠나요? 잠시 하늘을 올려다보는 여유를 가졌으면 좋겠어요. 당신의 하루가 평안하기를 바랍니다.");
     const [isBlocked, setIsBlocked] = useState(false);
@@ -47,8 +48,7 @@ export const ReceiveScreen: React.FC<ReceiveScreenProps> = ({ onBack }) => {
     };
 
     const handleSettings = () => {
-        Alert.alert('설정', '알림 표시 방식 설정 화면으로 이동합니다.');
-        // TODO: Navigate to settings
+        onSettings();
     };
 
     return (
@@ -108,7 +108,7 @@ export const ReceiveScreen: React.FC<ReceiveScreenProps> = ({ onBack }) => {
                             <View style={styles.blockedContainer}>
                                 <Feather name="slash" size={20} color={COLORS.textSecondary} style={{ marginBottom: 8 }} />
                                 <Text style={styles.blockedText}>
-                                    이 사용자는 더 이상{'\n'}메시지를 보낼 수 없어요.
+                                    차단한 사용자로부터 더 이상{'\n'}메시지를 받을 수 없어요.
                                 </Text>
                             </View>
                         )}
