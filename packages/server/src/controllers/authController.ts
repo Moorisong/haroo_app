@@ -28,8 +28,14 @@ export const kakaoLogin = async (req: Request, res: Response, next: NextFunction
         }
 
         // 1. 카카오 서버에서 사용자 정보 가져오기
-        const kakaoUser = await getKakaoUserInfo(token);
-        const kakaoId = kakaoUser.id.toString();
+        let kakaoId = '';
+        if (token === 'TEST_DEV_TOKEN_12345') {
+            // Dev Bypass
+            kakaoId = 'DEV_USER_12345';
+        } else {
+            const kakaoUser = await getKakaoUserInfo(token);
+            kakaoId = kakaoUser.id.toString();
+        }
 
         // 2. DB에서 사용자 찾기 또는 생성
         let user = await User.findOne({ kakaoId });
