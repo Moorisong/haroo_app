@@ -1,4 +1,4 @@
-import { HomeScreen } from './src/screens';
+import { HomeScreen, LandingScreen } from './src/screens';
 import {
   useFonts,
   NanumMyeongjo_400Regular,
@@ -11,6 +11,7 @@ import {
   NanumGothic_800ExtraBold
 } from '@expo-google-fonts/nanum-gothic';
 import { ActivityIndicator, View } from 'react-native';
+import { useState, useEffect } from 'react';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -22,6 +23,17 @@ export default function App() {
     NanumGothic_800ExtraBold,
   });
 
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // 3초 후 로딩 종료
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   if (!fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -30,5 +42,5 @@ export default function App() {
     );
   }
 
-  return <HomeScreen />;
+  return isLoading ? <LandingScreen /> : <HomeScreen />;
 }
