@@ -11,19 +11,22 @@ import {
     ScrollView,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { BubbleBackground } from '../components/BubbleBackground';
-
-interface SendScreenProps {
-    onBack: () => void;
-}
+import { sendMessage } from '../services/api';
+import { AxiosError } from 'axios';
 
 type PriceOption = 500 | 1000;
+type DurationOption = 1 | 3;
 
-export const SendScreen: React.FC<SendScreenProps> = ({ onBack }) => {
+export const SendScreen: React.FC = () => {
+    const navigation = useNavigation();
+
     const [message, setMessage] = useState('');
     const [selectedPrice, setSelectedPrice] = useState<PriceOption>(500);
+    const [isSending, setIsSending] = useState(false);
 
     const checkLimit = (text: string) => {
         if (text.length <= 40) {
@@ -31,23 +34,27 @@ export const SendScreen: React.FC<SendScreenProps> = ({ onBack }) => {
         }
     };
 
-    const handlePayment = () => {
-        Alert.alert(
-            '결제 확인',
-            `${selectedPrice}원을 결제하고 메시지를 전송하시겠습니까?`,
-            [
-                { text: '취소', style: 'cancel' },
-                {
-                    text: '결제하기',
-                    onPress: () => {
-                        // TODO: 실제 결제 로직 연동
-                        Alert.alert('성공', '메시지가 전송되었습니다.', [
-                            { text: '확인', onPress: onBack }
-                        ]);
-                    }
-                }
-            ]
-        );
+    const handleSend = async () => {
+        if (message.trim().length === 0) {
+            Alert.alert('알림', '메시지를 입력해주세요.');
+            return;
+        }
+
+        const duration: DurationOption = selectedPrice === 500 ? 1 : 3;
+
+        setIsSending(true);
+        try {
+            await sendMessage({ message: message.trim(), duration });
+            Alert.alert('전송 완료', '메시지가 성공적으로 전송되었습니다.', [
+                { text: '확인', onPress: () => navigation.goBack() }
+            ]);
+        } catch (error) {
+            const axiosError = error as AxiosError<{ message: string }>;
+            const errorMessage = axiosError.response?.data?.message || '메시지 전송에 실패했습니다.';
+            Alert.alert('전송 실패', errorMessage);
+        } finally {
+            setIsSending(false);
+        }
     };
 
     return (
@@ -56,7 +63,7 @@ export const SendScreen: React.FC<SendScreenProps> = ({ onBack }) => {
 
             {/* 헤더 */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Feather name="arrow-left" size={24} color={COLORS.textPrimary} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>메시지 작성</Text>
@@ -120,9 +127,9 @@ export const SendScreen: React.FC<SendScreenProps> = ({ onBack }) => {
 
                         {/* 결제 버튼 */}
                         <PrimaryButton
-                            title={`${selectedPrice.toLocaleString()}원으로 보내기`}
-                            onPress={handlePayment}
-                            disabled={message.trim().length === 0}
+                            title={isSending ? '전송 중...' : `${selectedPrice.toLocaleString()}원으로 보내기`}
+                            onPress={handleSend}
+                            disabled={message.trim().length === 0 || isSending}
                             style={styles.payButton}
                         />
                     </View>
@@ -212,11 +219,11 @@ const styles = StyleSheet.create({
         borderColor: COLORS.border,
         borderRadius: 12,
         padding: SPACING.md,
-        paddingTop: SPACING.md, // 멀티라인 정렬
+        paddingTop: SPACING.md,
         fontSize: FONT_SIZES.md,
         fontFamily: FONTS.regular,
         color: COLORS.textPrimary,
-        height: 120, // 충분한 높이
+        height: 120,
         textAlignVertical: 'top',
     },
     counter: {
@@ -250,7 +257,7 @@ const styles = StyleSheet.create({
         padding: SPACING.md,
     },
     optionCardSelected: {
-        backgroundColor: '#FFFBF5', // 아주 연한 포인트 컬러 배경
+        backgroundColor: '#FFFBF5',
         borderColor: COLORS.accent,
     },
     optionHeader: {
@@ -295,7 +302,7 @@ const styles = StyleSheet.create({
         fontSize: FONT_SIZES.sm,
         color: COLORS.textTertiary,
         fontFamily: FONTS.regular,
-        paddingLeft: 28, // 라디오버튼 너비 + 마진만큼 들여쓰기
+        paddingLeft: 28,
     },
     optionTextSelected: {
         color: COLORS.textPrimary,
