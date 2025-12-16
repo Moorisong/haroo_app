@@ -17,12 +17,12 @@ const hasActiveMode = async (userId: string) => {
 // @body    targetHashId, durationDays
 export const requestMode = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { targetHashId, durationDays } = req.body;
+        const { targetHashId } = req.body;
         const initiator = req.user;
 
-        if (!targetHashId || !durationDays) {
+        if (!targetHashId) {
             res.status(400);
-            throw new Error('Target Hash ID and Duration are required');
+            throw new Error('Target Hash ID is required');
         }
 
         // 1. 대상 유저 찾기
@@ -54,7 +54,6 @@ export const requestMode = async (req: Request, res: Response, next: NextFunctio
         const newMode = await MessageMode.create({
             initiator: initiator._id,
             recipient: recipient._id,
-            durationDays, // 실제로는 결제 검증 후 설정되겠지만 일단 요청 시 입력받음
             status: 'PENDING',
         });
 

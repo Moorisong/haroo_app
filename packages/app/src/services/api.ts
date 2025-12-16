@@ -37,7 +37,7 @@ export const getCurrentMode = async (): Promise<Connection> => {
 };
 
 export interface RequestModePayload {
-    targetUserId: string;
+    targetHashId: string;
 }
 
 export const requestMode = async (payload: RequestModePayload): Promise<Connection> => {
