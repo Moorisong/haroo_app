@@ -10,6 +10,7 @@ export type ConnectionStatus =
 export interface Connection {
     id: string;
     status: ConnectionStatus;
+    requesterId: string; // 요청을 보낸 사용자의 ID
     partnerId?: string;
     startDate?: Date;
     endDate?: Date;
