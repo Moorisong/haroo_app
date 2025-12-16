@@ -14,6 +14,7 @@ import { notFound, errorHandler } from './middlewares/errorMiddleware';
 import authRoutes from './routes/authRoutes';
 import userRoutes from './routes/userRoutes';
 import modeRoutes from './routes/modeRoutes';
+import messageRoutes from './routes/messageRoutes';
 
 // Middleware
 app.use(express.json());
@@ -26,6 +27,7 @@ app.use(morgan('dev'));
 app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/modes', modeRoutes);
+app.use('/messages', messageRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {
