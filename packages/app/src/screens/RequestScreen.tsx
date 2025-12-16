@@ -26,7 +26,7 @@ export const RequestScreen: React.FC<RequestScreenProps> = ({ onBack }) => {
     const [step, setStep] = useState<Step>('CHECK_ID');
     const [targetId, setTargetId] = useState('');
     const [checkStatus, setCheckStatus] = useState<CheckStatus>('IDLE');
-    const [selectedDuration, setSelectedDuration] = useState<1 | 7 | null>(null);
+    const [selectedDuration, setSelectedDuration] = useState<1 | 3 | null>(null);
 
     const handleCheckId = () => {
         if (!targetId.trim()) {
@@ -110,6 +110,7 @@ export const RequestScreen: React.FC<RequestScreenProps> = ({ onBack }) => {
 
                         {checkStatus === 'UNAVAILABLE' && (
                             <View style={styles.statusMessageContainer}>
+                                <Feather name="alert-circle" size={32} color="#E07878" style={{ marginBottom: 8 }} />
                                 <Text style={styles.statusMessageUnavailable}>
                                     지금은 메시지 모드를{'\n'}신청할 수 없는 상태예요.
                                 </Text>
@@ -130,9 +131,9 @@ export const RequestScreen: React.FC<RequestScreenProps> = ({ onBack }) => {
                                         onPress={() => setSelectedDuration(1)}
                                     />
                                     <SelectionButton
-                                        label="7일"
-                                        selected={selectedDuration === 7}
-                                        onPress={() => setSelectedDuration(7)}
+                                        label="3일"
+                                        selected={selectedDuration === 3}
+                                        onPress={() => setSelectedDuration(3)}
                                     />
                                 </View>
 

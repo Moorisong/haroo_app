@@ -19,12 +19,12 @@ import { BubbleBackground } from '../components/BubbleBackground';
 
 // Props
 interface HomeScreenProps {
-    // 실제 앱에서는 navigation과 상태 관리에서 받아옴
+    onRequest: () => void;
 }
 
 const { width, height } = Dimensions.get('window');
 
-export const HomeScreen: React.FC<HomeScreenProps> = () => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({ onRequest }) => {
     // 테스트용 상태 - 실제로는 서버에서 받아옴
     const [status, setStatus] = useState<ConnectionStatus>('NONE');
     const [userId] = useState('haru_x9f3a2');
@@ -37,8 +37,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = () => {
     };
 
     const handleRequestMode = () => {
-        // TODO: Navigate to /request
-        Alert.alert('', '메시지 모드 신청 화면으로 이동');
+        onRequest();
     };
 
     const handleSendMessage = () => {

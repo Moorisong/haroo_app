@@ -1,4 +1,4 @@
-import { HomeScreen, LandingScreen } from './src/screens';
+import { HomeScreen, LandingScreen, RequestScreen } from './src/screens';
 import {
   useFonts,
   NanumMyeongjo_400Regular,
@@ -13,6 +13,8 @@ import {
 import { ActivityIndicator, View } from 'react-native';
 import { useState, useEffect } from 'react';
 
+type Screen = 'HOME' | 'REQUEST';
+
 export default function App() {
   const [fontsLoaded] = useFonts({
     NanumMyeongjo_400Regular,
@@ -24,6 +26,7 @@ export default function App() {
   });
 
   const [isLoading, setIsLoading] = useState(true);
+  const [currentScreen, setCurrentScreen] = useState<Screen>('HOME');
 
   useEffect(() => {
     // 3초 후 로딩 종료
@@ -42,5 +45,16 @@ export default function App() {
     );
   }
 
-  return isLoading ? <LandingScreen /> : <HomeScreen />;
+  if (isLoading) return <LandingScreen />;
+
+  return (
+    <>
+      {currentScreen === 'HOME' && (
+        <HomeScreen onRequest={() => setCurrentScreen('REQUEST')} />
+      )}
+      {currentScreen === 'REQUEST' && (
+        <RequestScreen onBack={() => setCurrentScreen('HOME')} />
+      )}
+    </>
+  );
 }
