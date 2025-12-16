@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import User from '../models/User';
 import MessageMode from '../models/MessageMode';
+import Message from '../models/Message'; // Import Message model
 
 // 유틸: 유저가 이미 활성 상태의 모드(PENDING or ACTIVE)가 있는지 확인
 const hasActiveMode = async (userId: string) => {
@@ -136,7 +137,31 @@ export const getCurrentMode = async (req: Request, res: Response, next: NextFunc
             .populate('initiator', 'hashId settings')
             .populate('recipient', 'hashId settings');
 
-        res.json(mode || null); // 없으면 null 반환
+        if (!mode) {
+            res.json(null); // No active or pending mode
+            return;
+        }
+
+        let canSendToday = false;
+        if (mode.status === 'ACTIVE_PERIOD') {
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date();
+            endOfDay.setHours(23, 59, 59, 999);
+
+            const messageSentToday = await Message.findOne({
+                modeId: mode._id,
+                sender: userId, // Current user is the sender
+                sentAt: {
+                    $gte: startOfDay,
+                    $lte: endOfDay,
+                },
+            });
+            canSendToday = !messageSentToday;
+        }
+
+        // Return mode along with canSendToday
+        res.json({ ...mode.toObject(), canSendToday });
     } catch (error) {
         next(error);
     }
