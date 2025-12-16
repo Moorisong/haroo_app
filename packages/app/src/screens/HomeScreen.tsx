@@ -20,11 +20,12 @@ import { BubbleBackground } from '../components/BubbleBackground';
 // Props
 interface HomeScreenProps {
     onRequest: () => void;
+    onSend: () => void;
 }
 
 const { width, height } = Dimensions.get('window');
 
-export const HomeScreen: React.FC<HomeScreenProps> = ({ onRequest }) => {
+export const HomeScreen: React.FC<HomeScreenProps> = ({ onRequest, onSend }) => {
     // 테스트용 상태 - 실제로는 서버에서 받아옴
     const [status, setStatus] = useState<ConnectionStatus>('NONE');
     const [userId] = useState('haru_x9f3a2');
@@ -41,8 +42,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onRequest }) => {
     };
 
     const handleSendMessage = () => {
-        // TODO: Navigate to /message/write
-        Alert.alert('', '메시지 작성 화면으로 이동');
+        onSend();
     };
 
     // 상태 변경 테스트 버튼 (개발용)

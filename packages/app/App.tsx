@@ -1,4 +1,4 @@
-import { HomeScreen, LandingScreen, RequestScreen } from './src/screens';
+import { HomeScreen, LandingScreen, RequestScreen, SendScreen } from './src/screens';
 import {
   useFonts,
   NanumMyeongjo_400Regular,
@@ -13,7 +13,7 @@ import {
 import { ActivityIndicator, View } from 'react-native';
 import { useState, useEffect } from 'react';
 
-type Screen = 'HOME' | 'REQUEST';
+type Screen = 'HOME' | 'REQUEST' | 'SEND';
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -50,10 +50,16 @@ export default function App() {
   return (
     <>
       {currentScreen === 'HOME' && (
-        <HomeScreen onRequest={() => setCurrentScreen('REQUEST')} />
+        <HomeScreen
+          onRequest={() => setCurrentScreen('REQUEST')}
+          onSend={() => setCurrentScreen('SEND')}
+        />
       )}
       {currentScreen === 'REQUEST' && (
         <RequestScreen onBack={() => setCurrentScreen('HOME')} />
+      )}
+      {currentScreen === 'SEND' && (
+        <SendScreen onBack={() => setCurrentScreen('HOME')} />
       )}
     </>
   );
