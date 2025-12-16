@@ -35,6 +35,7 @@ export const RequestScreen: React.FC = () => {
         try {
             await requestMode({
                 targetHashId: targetHashId.trim(),
+                durationDays: 1, // Default to 1 day as per project description for initial request
             });
 
             setStatusMessage({ type: 'success', text: `${targetHashId.trim()}님에게 메시지 모드를 신청했습니다.` });

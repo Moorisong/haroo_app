@@ -17,12 +17,17 @@ const hasActiveMode = async (userId: string) => {
 // @body    targetHashId, durationDays
 export const requestMode = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { targetHashId } = req.body;
+        const { targetHashId, durationDays } = req.body;
         const initiator = req.user;
 
-        if (!targetHashId) {
+        if (!targetHashId || !durationDays) {
             res.status(400);
-            throw new Error('Target Hash ID is required');
+            throw new Error('Target Hash ID and durationDays are required');
+        }
+
+        if (![1, 3].includes(durationDays)) {
+            res.status(400);
+            throw new Error('Invalid durationDays. Must be 1 or 3.');
         }
 
         // 1. 대상 유저 찾기
@@ -54,6 +59,7 @@ export const requestMode = async (req: Request, res: Response, next: NextFunctio
         const newMode = await MessageMode.create({
             initiator: initiator._id,
             recipient: recipient._id,
+            durationDays,
             status: 'PENDING',
         });
 

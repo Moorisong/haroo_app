@@ -38,6 +38,7 @@ export const getCurrentMode = async (): Promise<Connection> => {
 
 export interface RequestModePayload {
     targetHashId: string;
+    durationDays: 1 | 3;
 }
 
 export const requestMode = async (payload: RequestModePayload): Promise<Connection> => {
