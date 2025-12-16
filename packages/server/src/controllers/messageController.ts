@@ -34,7 +34,7 @@ export const sendMessage = async (req: Request, res: Response, next: NextFunctio
         }
 
         // 3. 모드 활성 상태 검증
-        if (mode.status !== 'ACTIVE') {
+        if (mode.status !== 'ACTIVE_PERIOD') {
             res.status(400);
             throw new Error('Message Mode is not active');
         }
@@ -91,7 +91,7 @@ export const getTodayMessage = async (req: Request, res: Response, next: NextFun
         // 1. 현재 활성 모드 찾기
         const activeMode = await MessageMode.findOne({
             $or: [{ initiator: userId }, { recipient: userId }],
-            status: 'ACTIVE',
+            status: 'ACTIVE_PERIOD',
         });
 
         if (!activeMode) {
