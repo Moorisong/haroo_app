@@ -1,4 +1,7 @@
-import { HomeScreen, LandingScreen, RequestScreen, SendScreen, ReceiveScreen, SettingsScreen } from './src/screens';
+import React from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
 import {
   useFonts,
   NanumMyeongjo_400Regular,
@@ -10,10 +13,49 @@ import {
   NanumGothic_700Bold,
   NanumGothic_800ExtraBold
 } from '@expo-google-fonts/nanum-gothic';
-import { ActivityIndicator, View } from 'react-native';
-import { useState, useEffect } from 'react';
 
-type Screen = 'HOME' | 'REQUEST' | 'SEND' | 'RECEIVE' | 'SETTINGS';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
+import { HomeScreen, LandingScreen, RequestScreen, SendScreen, ReceiveScreen, SettingsScreen } from './src/screens';
+
+const Stack = createStackNavigator();
+
+const AppStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="Request" component={RequestScreen} />
+      <Stack.Screen name="Send" component={SendScreen} />
+      <Stack.Screen name="Receive" component={ReceiveScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
+    </Stack.Navigator>
+  );
+};
+
+const AuthStack = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Landing" component={LandingScreen} />
+    </Stack.Navigator>
+  );
+};
+
+const RootNavigator = () => {
+  const { userToken, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  return (
+    <NavigationContainer>
+      {userToken ? <AppStack /> : <AuthStack />}
+    </NavigationContainer>
+  );
+};
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -25,18 +67,6 @@ export default function App() {
     NanumGothic_800ExtraBold,
   });
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [currentScreen, setCurrentScreen] = useState<Screen>('HOME');
-
-  useEffect(() => {
-    // 3초 후 로딩 종료
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
   if (!fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -45,32 +75,9 @@ export default function App() {
     );
   }
 
-  if (isLoading) return <LandingScreen />;
-
   return (
-    <>
-      {currentScreen === 'HOME' && (
-        <HomeScreen
-          onRequest={() => setCurrentScreen('REQUEST')}
-          onSend={() => setCurrentScreen('SEND')}
-          onReceive={() => setCurrentScreen('RECEIVE')}
-        />
-      )}
-      {currentScreen === 'REQUEST' && (
-        <RequestScreen onBack={() => setCurrentScreen('HOME')} />
-      )}
-      {currentScreen === 'SEND' && (
-        <SendScreen onBack={() => setCurrentScreen('HOME')} />
-      )}
-      {currentScreen === 'RECEIVE' && (
-        <ReceiveScreen
-          onBack={() => setCurrentScreen('HOME')}
-          onSettings={() => setCurrentScreen('SETTINGS')}
-        />
-      )}
-      {currentScreen === 'SETTINGS' && (
-        <SettingsScreen onBack={() => setCurrentScreen('RECEIVE')} />
-      )}
-    </>
+    <AuthProvider>
+      <RootNavigator />
+    </AuthProvider>
   );
 }
