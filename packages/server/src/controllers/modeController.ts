@@ -6,7 +6,7 @@ import MessageMode from '../models/MessageMode';
 const hasActiveMode = async (userId: string) => {
     const mode = await MessageMode.findOne({
         $or: [{ initiator: userId }, { recipient: userId }],
-        status: { $in: ['PENDING', 'ACTIVE'] },
+        status: { $in: ['PENDING', 'ACTIVE_PERIOD'] },
     });
     return !!mode;
 };
@@ -110,7 +110,7 @@ export const acceptMode = async (req: Request, res: Response, next: NextFunction
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + mode.durationDays);
 
-        mode.status = 'ACTIVE';
+        mode.status = 'ACTIVE_PERIOD';
         mode.startDate = startDate;
         mode.endDate = endDate;
 
@@ -131,7 +131,7 @@ export const getCurrentMode = async (req: Request, res: Response, next: NextFunc
 
         const mode = await MessageMode.findOne({
             $or: [{ initiator: userId }, { recipient: userId }],
-            status: { $in: ['PENDING', 'ACTIVE'] },
+            status: { $in: ['PENDING', 'ACTIVE_PERIOD'] },
         })
             .populate('initiator', 'hashId settings')
             .populate('recipient', 'hashId settings');

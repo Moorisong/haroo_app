@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IMessageMode extends Document {
     initiator: mongoose.Types.ObjectId; // 신청한 유저 (결제한 유저)
     recipient: mongoose.Types.ObjectId; // 받는 유저
-    status: 'PENDING' | 'ACTIVE' | 'REJECTED' | 'EXPIRED' | 'CANCELED';
+    status: 'PENDING' | 'ACTIVE_PERIOD' | 'REJECTED' | 'EXPIRED' | 'CANCELED';
     startDate?: Date; // 수락하여 활성화된 시점
     endDate?: Date; // 활성화 시점 + durationDays
     durationDays: number; // 1 or 3
@@ -24,7 +24,7 @@ const MessageModeSchema: Schema = new Schema({
     },
     status: {
         type: String,
-        enum: ['PENDING', 'ACTIVE', 'REJECTED', 'EXPIRED', 'CANCELED'],
+        enum: ['PENDING', 'ACTIVE_PERIOD', 'REJECTED', 'EXPIRED', 'CANCELED'],
         default: 'PENDING',
     },
     startDate: {
