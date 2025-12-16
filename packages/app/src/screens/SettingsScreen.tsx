@@ -6,10 +6,13 @@ import {
     TouchableOpacity,
     Platform,
     ScrollView,
+    Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
 import { BubbleBackground } from '../components/BubbleBackground';
+import { UserIdCard } from '../components/UserIdCard';
 
 interface SettingsScreenProps {
     onBack: () => void;
@@ -20,6 +23,13 @@ type DisplayMode = 'WIDGET' | 'NOTIFICATION';
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
     // 실제로는 저장된 설정을 불러와야 함
     const [displayMode, setDisplayMode] = useState<DisplayMode>('NOTIFICATION');
+    // TODO: 전역 상태 관리 도입 시 교체 필요
+    const [userId] = useState('haru_x9f3a2');
+
+    const handleCopyId = async () => {
+        await Clipboard.setStringAsync(userId);
+        Alert.alert('복사 완료', 'ID가 클립보드에 복사되었습니다.');
+    };
 
     return (
         <View style={styles.container}>
@@ -35,6 +45,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.content}>
+
+                    {/* 내 정보 섹션 */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>내 정보</Text>
+                        <View style={styles.myInfoContainer}>
+                            <Text style={styles.myInfoLabel}>내 ID</Text>
+                            <UserIdCard userId={userId} onCopy={handleCopyId} />
+                        </View>
+                        <Text style={styles.description}>
+                            상대방이 이 ID를 통해 나에게 메시지 모드를 신청할 수 있어요.
+                        </Text>
+                    </View>
+
+                    <View style={styles.divider} />
 
                     {/* 표시 방식 선택 섹션 */}
                     <View style={styles.section}>
@@ -183,5 +207,27 @@ const styles = StyleSheet.create({
         height: 10,
         borderRadius: 5,
         backgroundColor: COLORS.accent,
+    },
+    myInfoContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'rgba(255,255,255,0.6)',
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        borderRadius: 12, // 16 -> 12로 축소
+        padding: SPACING.md,
+        // paddingVertical 제거하여 기본 padding만 적용
+        marginBottom: SPACING.xs, // sm -> xs로 축소
+    },
+    myInfoLabel: {
+        fontSize: FONT_SIZES.md,
+        fontFamily: FONTS.medium,
+        color: COLORS.textPrimary,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: COLORS.divider,
+        marginBottom: SPACING.xl,
     },
 });
