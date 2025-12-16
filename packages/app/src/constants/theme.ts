@@ -7,7 +7,7 @@ export const COLORS = {
     backgroundSecondary: '#EFE9E2',
 
     // 텍스트
-    textPrimary: '#3D3D3D',       // 약간 부드러운 블랙
+    textPrimary: '#4F4F4F',       // 진한 회색 (Soft Dark Gray)
     textSecondary: '#7A7A7A',
     textTertiary: '#A8A8A8',
 

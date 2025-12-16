@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
         width: width * 0.4, // 화면 너비의 40%
         height: undefined,
         aspectRatio: 1,
-        marginBottom: SPACING.lg, // 텍스트와 간격
+        marginBottom: SPACING.xxl, // 텍스트와 여백 넓게 (48)
     },
     textContainer: {
         alignItems: 'center',
