@@ -13,7 +13,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
 import { BubbleBackground } from '../components/BubbleBackground';
-import { getTodayReceivedMessage, markMessageAsRead, ReceivedMessage } from '../services/api';
+import { getTodayReceivedMessage, markMessageAsRead, getUserProfile, ReceivedMessage } from '../services/api';
 
 export const ReceiveScreen: React.FC = () => {
     const navigation = useNavigation<any>();
@@ -21,17 +21,23 @@ export const ReceiveScreen: React.FC = () => {
     const [message, setMessage] = useState<ReceivedMessage | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isBlocked, setIsBlocked] = useState(false);
+    const [displayMode, setDisplayMode] = useState<'WIDGET' | 'NOTIFICATION'>('NOTIFICATION');
 
-    const fetchMessage = useCallback(async () => {
+    const fetchData = useCallback(async () => {
         try {
             setIsLoading(true);
-            const response = await getTodayReceivedMessage();
-            setMessage(response.message);
+            const [messageResponse, profileResponse] = await Promise.all([
+                getTodayReceivedMessage(),
+                getUserProfile(),
+            ]);
+
+            setMessage(messageResponse.message);
+            setDisplayMode(profileResponse.settings?.displayMode || 'NOTIFICATION');
 
             // 메시지가 있고 아직 읽지 않은 경우 읽음 처리
-            if (response.message && !response.message.isRead) {
+            if (messageResponse.message && !messageResponse.message.isRead) {
                 try {
-                    await markMessageAsRead(response.message._id);
+                    await markMessageAsRead(messageResponse.message._id);
                     // 로컬 상태도 업데이트
                     setMessage(prev => prev ? { ...prev, isRead: true } : null);
                 } catch (readError) {
@@ -40,17 +46,17 @@ export const ReceiveScreen: React.FC = () => {
                 }
             }
         } catch (error) {
-            console.error('Failed to fetch message:', error);
+            console.error('Failed to fetch data:', error);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
-    // 화면 진입 시 메시지 조회 (화면이 focus될 때마다)
+    // 화면 진입 시 데이터 조회 (화면이 focus될 때마다)
     useFocusEffect(
         useCallback(() => {
-            fetchMessage();
-        }, [fetchMessage])
+            fetchData();
+        }, [fetchData])
     );
 
     const formatDate = (dateString: string) => {
@@ -166,7 +172,9 @@ export const ReceiveScreen: React.FC = () => {
                     >
                         <Text style={styles.settingText}>
                             현재 표시 방식:{'\n'}
-                            <Text style={styles.settingBold}>알림바 고정</Text>
+                            <Text style={styles.settingBold}>
+                                {displayMode === 'WIDGET' ? '홈 화면 위젯' : '알림바 고정'}
+                            </Text>
                         </Text>
                         <Feather name="chevron-right" size={20} color={COLORS.textTertiary} />
                     </TouchableOpacity>
