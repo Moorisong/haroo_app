@@ -156,3 +156,13 @@ export const getTodayReceivedMessage = async (): Promise<{ message: ReceivedMess
         throw error;
     }
 };
+
+export const markMessageAsRead = async (messageId: string): Promise<any> => {
+    try {
+        const response = await api.post(`/messages/${messageId}/read`);
+        return response.data;
+    } catch (error) {
+        console.error('Error marking message as read:', error);
+        throw error;
+    }
+};
