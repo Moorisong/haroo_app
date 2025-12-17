@@ -21,4 +21,7 @@ export interface User {
     id: string;
     hashId: string;
     currentConnection?: Connection;
+    settings?: {
+        displayMode: 'WIDGET' | 'NOTIFICATION';
+    };
 }
