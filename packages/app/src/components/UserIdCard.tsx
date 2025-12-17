@@ -6,13 +6,11 @@ import { COLORS, FONT_SIZES, SPACING } from '../constants/theme';
 interface UserIdCardProps {
     userId: string;
     onCopy: () => void;
-    variant?: 'simple' | 'default'; // default는 이제 사용 안 할 수도 있지만 유지
 }
 
 export const UserIdCard: React.FC<UserIdCardProps> = ({
     userId,
     onCopy,
-    variant = 'simple'
 }) => {
     return (
         <View style={styles.container}>

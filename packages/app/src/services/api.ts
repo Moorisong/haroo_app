@@ -1,6 +1,5 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
 import { Connection, User } from '../types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;

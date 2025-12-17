@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import Message from '../models/Message';
 import MessageMode from '../models/MessageMode';
-import mongoose from 'mongoose';
 
 // @desc    Send a message (Daily limit: 1)
 // @route   POST /messages
