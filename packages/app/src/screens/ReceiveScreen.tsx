@@ -13,7 +13,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
 import { BubbleBackground } from '../components/BubbleBackground';
-import { getTodayReceivedMessage, ReceivedMessage } from '../services/api';
+import { getTodayReceivedMessage, markMessageAsRead, ReceivedMessage } from '../services/api';
 
 export const ReceiveScreen: React.FC = () => {
     const navigation = useNavigation<any>();
@@ -27,6 +27,18 @@ export const ReceiveScreen: React.FC = () => {
             setIsLoading(true);
             const response = await getTodayReceivedMessage();
             setMessage(response.message);
+
+            // 메시지가 있고 아직 읽지 않은 경우 읽음 처리
+            if (response.message && !response.message.isRead) {
+                try {
+                    await markMessageAsRead(response.message._id);
+                    // 로컬 상태도 업데이트
+                    setMessage(prev => prev ? { ...prev, isRead: true } : null);
+                } catch (readError) {
+                    console.error('Failed to mark message as read:', readError);
+                    // 읽음 처리 실패해도 메시지는 정상 표시
+                }
+            }
         } catch (error) {
             console.error('Failed to fetch message:', error);
         } finally {
