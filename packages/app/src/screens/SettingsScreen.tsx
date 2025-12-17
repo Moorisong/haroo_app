@@ -9,18 +9,17 @@ import {
     Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
 import { BubbleBackground } from '../components/BubbleBackground';
 import { UserIdCard } from '../components/UserIdCard';
 
-interface SettingsScreenProps {
-    onBack: () => void;
-}
-
 type DisplayMode = 'WIDGET' | 'NOTIFICATION';
 
-export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
+export const SettingsScreen: React.FC = () => {
+    const navigation = useNavigation<any>();
+
     // 실제로는 저장된 설정을 불러와야 함
     const [displayMode, setDisplayMode] = useState<DisplayMode>('NOTIFICATION');
     // TODO: 전역 상태 관리 도입 시 교체 필요
@@ -37,7 +36,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBack }) => {
 
             {/* 헤더 */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Feather name="arrow-left" size={24} color={COLORS.textPrimary} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>설정</Text>
