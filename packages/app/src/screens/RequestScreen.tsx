@@ -198,19 +198,15 @@ const styles = StyleSheet.create({
         color: COLORS.textPrimary,
     },
     messageContainer: {
-        padding: SPACING.md,
-        borderRadius: 12,
         marginBottom: SPACING.lg,
         alignItems: 'center',
         justifyContent: 'center',
     },
     successMessageContainer: {
-        backgroundColor: COLORS.successLight,
-        borderWidth: 0, // Remove border
+        // 배경색 없음
     },
     errorMessageContainer: {
-        backgroundColor: COLORS.dangerLight,
-        borderWidth: 0, // Remove border
+        // 배경색 없음
     },
     messageText: {
         fontSize: FONT_SIZES.md,
