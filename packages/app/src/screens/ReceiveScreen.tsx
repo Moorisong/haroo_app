@@ -261,11 +261,11 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255,255,255,0.5)',
     },
     messageText: {
-        fontSize: FONT_SIZES.xl, // 18px
-        fontFamily: FONTS.serif, // 명조체
+        fontSize: FONT_SIZES.lg, // 16px
+        fontFamily: FONTS.medium, // 고딕체
         color: COLORS.textPrimary,
-        lineHeight: 30, // 가독성 좋은 행간
-        marginBottom: SPACING.lg,
+        lineHeight: 24, // 행간 축소
+        marginBottom: SPACING.sm, // 간격 축소
     },
     dateContainer: {
         alignItems: 'flex-end',
