@@ -166,3 +166,17 @@ export const markMessageAsRead = async (messageId: string): Promise<any> => {
         throw error;
     }
 };
+
+export interface UserSettings {
+    displayMode: 'WIDGET' | 'NOTIFICATION';
+}
+
+export const updateUserSettings = async (settings: Partial<UserSettings>): Promise<any> => {
+    try {
+        const response = await api.patch('/users/settings', settings);
+        return response.data;
+    } catch (error) {
+        console.error('Error updating user settings:', error);
+        throw error;
+    }
+};
