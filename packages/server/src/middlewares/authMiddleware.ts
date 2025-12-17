@@ -5,6 +5,7 @@ import User from '../models/User';
 interface JwtPayload {
     id: string;
     hashId: string;
+    tokenType: string;
 }
 
 // Extend Express Request to include user
@@ -30,6 +31,11 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
             // Verify token
             const jwtSecret = process.env.JWT_SECRET || 'fallback_secret';
             const decoded = jwt.verify(token, jwtSecret) as JwtPayload;
+
+            if (decoded.tokenType !== 'access') {
+                res.status(401);
+                throw new Error('Not authorized, invalid token type');
+            }
 
             // Get user from the token
             req.user = await User.findById(decoded.id).select('-password');

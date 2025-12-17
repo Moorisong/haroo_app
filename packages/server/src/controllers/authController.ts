@@ -64,12 +64,32 @@ export const kakaoLogin = async (req: Request, res: Response, next: NextFunction
 
         // 3. JWT 토큰 발급
         const jwtSecret = process.env.JWT_SECRET || 'fallback_secret';
-        const serverToken = jwt.sign({ id: user._id, hashId: user.hashId }, jwtSecret, {
-            expiresIn: '30d',
-        });
+
+        // Access Token (15분)
+        const accessToken = jwt.sign(
+            { id: user._id, hashId: user.hashId, tokenType: 'access' },
+            jwtSecret,
+            { expiresIn: '15m' }
+        );
+
+        // Refresh Token (30일)
+        const refreshToken = jwt.sign(
+            { id: user._id, hashId: user.hashId, tokenType: 'refresh' },
+            jwtSecret,
+            { expiresIn: '30d' }
+        );
+
+        // Refresh Token 만료 시간 계산
+        const refreshTokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30일 후
+
+        // DB에 Refresh Token 저장
+        user.refreshToken = refreshToken;
+        user.refreshTokenExpiresAt = refreshTokenExpiresAt;
+        await user.save();
 
         res.status(200).json({
-            token: serverToken,
+            accessToken,
+            refreshToken,
             user: {
                 id: user._id,
                 hashId: user.hashId,
@@ -77,6 +97,69 @@ export const kakaoLogin = async (req: Request, res: Response, next: NextFunction
                 settings: user.settings,
             },
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Refresh Access Token
+// @route   POST /auth/refresh
+// @access  Public (with Refresh Token)
+export const refreshToken = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { refreshToken: clientRefreshToken } = req.body;
+
+        if (!clientRefreshToken) {
+            res.status(400);
+            throw new Error('Refresh Token is required');
+        }
+
+        const jwtSecret = process.env.JWT_SECRET || 'fallback_secret';
+        let decoded: any;
+        try {
+            decoded = jwt.verify(clientRefreshToken, jwtSecret);
+        } catch (error) {
+            res.status(401);
+            throw new Error('Invalid or expired Refresh Token');
+        }
+
+        if (decoded.tokenType !== 'refresh') {
+            res.status(401);
+            throw new Error('Provided token is not a Refresh Token');
+        }
+
+        const user = await User.findById(decoded.id);
+
+        if (!user || user.refreshToken !== clientRefreshToken || !user.refreshTokenExpiresAt || user.refreshTokenExpiresAt < new Date()) {
+            res.status(401);
+            throw new Error('Invalid or expired Refresh Token');
+        }
+
+        // Generate new Access Token (15분)
+        const newAccessToken = jwt.sign(
+            { id: user._id, hashId: user.hashId, tokenType: 'access' },
+            jwtSecret,
+            { expiresIn: '15m' }
+        );
+
+        // Optionally, generate a new Refresh Token and update in DB (as per spec)
+        // For now, just issue a new Access Token.
+        // If spec requires refresh token rotation, uncomment and implement below:
+        /*
+        const newRefreshToken = jwt.sign(
+            { id: user._id, hashId: user.hashId, tokenType: 'refresh' },
+            jwtSecret,
+            { expiresIn: '30d' }
+        );
+        const newRefreshTokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        user.refreshToken = newRefreshToken;
+        user.refreshTokenExpiresAt = newRefreshTokenExpiresAt;
+        await user.save();
+        res.status(200).json({ accessToken: newAccessToken, refreshToken: newRefreshToken });
+        */
+
+        res.status(200).json({ accessToken: newAccessToken });
+
     } catch (error) {
         next(error);
     }
