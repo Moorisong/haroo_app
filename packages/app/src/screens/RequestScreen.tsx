@@ -12,6 +12,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
+import { MESSAGES } from '../constants/messages';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { BubbleBackground } from '../components/BubbleBackground';
 import { requestMode } from '../services/api';
@@ -57,6 +58,8 @@ export const RequestScreen: React.FC = () => {
                 displayMessage = '해당 ID를 찾을 수 없어요.';
             } else if (errorMessage === 'Cannot request mode to yourself') {
                 displayMessage = '내 ID에는 메시지 모드를 신청할 수 없어요.';
+            } else if (errorMessage === 'You are blocked by this user') {
+                displayMessage = MESSAGES.REQUEST_UNAVAILABLE.BLOCKED_BY_PEER.TITLE;
             }
             // Add more specific error messages as needed based on backend responses
 
