@@ -74,4 +74,15 @@ export const MESSAGES = {
             TITLE: '메시지 모드가\n종료되었어요.',
         },
     },
+
+    // 6. 수신자 신청 대기 상태 (홈 화면)
+    PENDING_RECEIVER: {
+        TITLE: '누군가\n마음을 전하고 싶어 해요.',
+        SUB: '허락하면 하루에 한 번\n메시지를 받을 수 있어요.',
+        BUTTON: {
+            ACCEPT: '수락하기',
+            REJECT: '거절하기',
+            BLOCK: '이 발신자 차단하기',
+        }
+    }
 } as const;

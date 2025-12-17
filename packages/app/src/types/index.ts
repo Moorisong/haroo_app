@@ -8,16 +8,18 @@ export type ConnectionStatus =
     | 'BLOCKED';       // 차단됨
 
 export interface Connection {
-    id: string;
+    _id: string; // Mongoose ID
+    id?: string; // Client side alias if needed, but safer to use _id from backend
     status: ConnectionStatus;
-    requesterId: string; // 요청을 보낸 사용자의 ID
-    partnerId?: string;
+    initiator: User | string; // Populated User object or ID string
+    recipient: User | string; // Populated User object or ID string
     startDate?: Date;
     endDate?: Date;
     canSendToday?: boolean;
 }
 
 export interface User {
+    _id: string; // Mongoose ID
     id: string;
     hashId: string;
     currentConnection?: Connection;

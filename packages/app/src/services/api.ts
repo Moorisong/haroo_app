@@ -102,14 +102,19 @@ export const requestMode = async (payload: RequestModePayload): Promise<Connecti
     }
 };
 
-export const acceptMode = async (id: string): Promise<Connection> => {
-    try {
-        const response = await api.post<Connection>(`/modes/accept/${id}`);
-        return response.data;
-    } catch (error) {
-        console.error('Error accepting mode:', error);
-        throw error;
-    }
+export const acceptMode = async (modeId: string) => {
+    const response = await api.post(`/modes/accept/${modeId}`);
+    return response.data;
+};
+
+export const rejectMode = async (modeId: string) => {
+    const response = await api.post(`/modes/reject/${modeId}`);
+    return response.data;
+};
+
+export const blockRequest = async (modeId: string) => {
+    const response = await api.post(`/modes/block/${modeId}`);
+    return response.data;
 };
 
 export const getUserProfile = async (): Promise<User> => {
