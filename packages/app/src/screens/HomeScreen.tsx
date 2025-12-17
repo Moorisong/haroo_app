@@ -8,13 +8,14 @@ import {
     Alert,
     ScrollView,
     ActivityIndicator,
+    TouchableOpacity,
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 
 import { COLORS, FONT_SIZES, SPACING, FONTS } from '../constants/theme';
 import { Connection, User } from '../types';
-import { getCurrentMode, getUserProfile, acceptMode } from '../services/api';
+import { getCurrentMode, getUserProfile, acceptMode, getTodayReceivedMessage, ReceivedMessage } from '../services/api';
 
 import { BubbleBackground } from '../components/BubbleBackground';
 import { UserIdCard } from '../components/UserIdCard';
@@ -25,6 +26,7 @@ export const HomeScreen: React.FC = () => {
 
     const [connection, setConnection] = useState<Connection | null>(null);
     const [user, setUser] = useState<User | null>(null);
+    const [receivedMessage, setReceivedMessage] = useState<ReceivedMessage | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -32,12 +34,14 @@ export const HomeScreen: React.FC = () => {
         try {
             setIsLoading(true);
             setError(null);
-            const [connectionData, userData] = await Promise.all([
+            const [connectionData, userData, messageData] = await Promise.all([
                 getCurrentMode(),
                 getUserProfile(),
+                getTodayReceivedMessage(),
             ]);
             setConnection(connectionData);
             setUser(userData);
+            setReceivedMessage(messageData.message);
         } catch (err) {
             setError('정보를 불러오는 데 실패했습니다. 다시 시도해 주세요.');
         } finally {
@@ -81,7 +85,7 @@ export const HomeScreen: React.FC = () => {
 
     const renderContent = () => {
         if (isLoading) {
-            return <ActivityIndicator size="large" color={COLORS.primary} style={styles.centerContent} />;
+            return <ActivityIndicator size="large" color={COLORS.accent} style={styles.centerContent} />;
         }
 
         if (error || !user) { // Removed !connection from this condition
@@ -111,8 +115,10 @@ export const HomeScreen: React.FC = () => {
                 return (
                     <ActiveStateContent
                         daysRemaining={getDaysRemaining()}
-                        canSendToday={connection.canSendToday ?? false}
+                        canSendToday={connection?.canSendToday ?? false}
                         onSendMessage={handleSendMessage}
+                        hasNewMessage={receivedMessage !== null}
+                        onViewMessage={() => navigation.navigate('Receive')}
                     />
                 );
             case 'EXPIRED':
@@ -135,7 +141,6 @@ export const HomeScreen: React.FC = () => {
                             <UserIdCard
                                 userId={user.hashId}
                                 onCopy={handleCopyId}
-                                variant="simple"
                             />
                         </View>
                     )}
@@ -215,15 +220,31 @@ interface ActiveStateContentProps {
     daysRemaining: number;
     canSendToday: boolean;
     onSendMessage: () => void;
+    hasNewMessage?: boolean;
+    onViewMessage?: () => void;
 }
 
-const ActiveStateContent: React.FC<ActiveStateContentProps> = ({ daysRemaining, canSendToday, onSendMessage }) => (
+const ActiveStateContent: React.FC<ActiveStateContentProps> = ({
+    daysRemaining,
+    canSendToday,
+    onSendMessage,
+    hasNewMessage,
+    onViewMessage
+}) => (
     <View style={styles.stateContainer}>
         <View style={styles.centerContent}>
             <View style={styles.statusBadge}>
                 <Text style={styles.statusBadgeText}>메시지 모드 진행 중</Text>
             </View>
             <Text style={styles.dDay}>D-{daysRemaining}</Text>
+
+            {/* 새 메시지 알림 */}
+            {hasNewMessage && (
+                <TouchableOpacity style={styles.newMessageBadge} onPress={onViewMessage}>
+                    <Text style={styles.newMessageText}>📩 오늘의 메시지가 도착했어요</Text>
+                </TouchableOpacity>
+            )}
+
             <Text style={styles.sendStatus}>
                 {canSendToday ? '오늘 메시지 전송 가능' : '오늘 메시지를 이미 보냈어요'}
             </Text>
@@ -271,5 +292,17 @@ const styles = StyleSheet.create({
     statusBadgeText: { fontSize: FONT_SIZES.xs, color: COLORS.accent, fontWeight: '500' },
     dDay: { fontSize: FONT_SIZES.xxl, color: COLORS.textPrimary, fontWeight: '600', marginBottom: SPACING.sm },
     sendStatus: { fontSize: FONT_SIZES.sm, color: COLORS.textSecondary },
+    newMessageBadge: {
+        backgroundColor: COLORS.successLight,
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.sm,
+        borderRadius: 12,
+        marginVertical: SPACING.md,
+    },
+    newMessageText: {
+        fontSize: FONT_SIZES.sm,
+        color: COLORS.success,
+        fontWeight: '500',
+    },
     errorText: { color: COLORS.danger, textAlign: 'center' }
 });
