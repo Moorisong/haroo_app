@@ -29,12 +29,17 @@ const seedMessage = async () => {
         console.log('Active Mode found:', activeMode._id);
 
         // 샘플 메시지 생성 (initiator가 보낸 메시지)
+        const sentAt = new Date();
+        const expiresAt = new Date(sentAt.getTime() + 24 * 60 * 60 * 1000); // +24시간
+
         const sampleMessage = await Message.create({
             modeId: activeMode._id,
             sender: activeMode.initiator,
             content: '오늘 하루도 수고했어요 💕',
             isRead: false,
-            sentAt: new Date(),
+            status: 'ACTIVE',
+            sentAt,
+            expiresAt,
         });
 
         console.log('샘플 메시지가 추가되었습니다:', sampleMessage);
