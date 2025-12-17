@@ -14,6 +14,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
+import { MESSAGES } from '../constants/messages';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { BubbleBackground } from '../components/BubbleBackground';
 import { sendMessage, getCurrentMode } from '../services/api';
@@ -70,7 +71,18 @@ export const SendScreen: React.FC = () => {
             ]);
         } catch (error) {
             const axiosError = error as AxiosError<{ message: string }>;
-            const errorMessage = axiosError.response?.data?.message || '메시지 전송에 실패했습니다.';
+            let errorMessage = axiosError.response?.data?.message || '메시지 전송에 실패했습니다.';
+
+            if (errorMessage === 'You have already sent a message today') {
+                errorMessage = `${MESSAGES.SEND.DAILY_LIMIT.TITLE}\n${MESSAGES.SEND.DAILY_LIMIT.SUB}`;
+            } else if (errorMessage === 'Message Mode is not active' || errorMessage === 'Message Mode has expired') {
+                errorMessage = MESSAGES.RECEIVE.EXPIRED_ACCESS.TITLE;
+            } else {
+                // Default fallback or mapping for 'Send fail'
+                // Only prepend generic error if it's not one of the known ones above
+                errorMessage = `${MESSAGES.SEND.SEND_FAIL.TITLE}\n${errorMessage}`;
+            }
+
             Alert.alert('전송 실패', errorMessage);
         } finally {
             setIsSending(false);

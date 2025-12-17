@@ -14,6 +14,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
 import { BubbleBackground } from '../components/BubbleBackground';
 import { getTodayReceivedMessage, markMessageAsRead, getUserProfile, ReceivedMessage, blockUser } from '../services/api';
+import { MESSAGES } from '../constants/messages';
 
 export const ReceiveScreen: React.FC = () => {
     const navigation = useNavigation<any>();
@@ -218,7 +219,7 @@ export const ReceiveScreen: React.FC = () => {
                             <View style={styles.blockedContainer}>
                                 <Feather name="slash" size={20} color={COLORS.textSecondary} style={{ marginBottom: 8 }} />
                                 <Text style={styles.blockedText}>
-                                    차단한 사용자로부터 더 이상{'\n'}메시지를 받을 수 없어요.
+                                    {MESSAGES.RECEIVE.BLOCKED_USER.TITLE}
                                 </Text>
                             </View>
                         )}

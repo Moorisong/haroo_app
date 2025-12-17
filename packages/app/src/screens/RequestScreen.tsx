@@ -51,13 +51,13 @@ export const RequestScreen: React.FC = () => {
             let displayMessage = errorMessage || '알 수 없는 오류가 발생했습니다.';
 
             if (errorMessage === 'You already have an active or pending mode') {
-                displayMessage = '현재 다른 메시지 모드가 진행 중이에요.\n한 번에 하나의 메시지 모드만 사용할 수 있어요.';
+                displayMessage = `${MESSAGES.REQUEST_UNAVAILABLE.SELF_BUSY.TITLE}\n${MESSAGES.REQUEST_UNAVAILABLE.SELF_BUSY.SUB}`;
             } else if (errorMessage === 'The recipient is currently busy with another mode') {
-                displayMessage = '이 사용자는 이미 다른 메시지 모드를 사용 중이에요.';
+                displayMessage = MESSAGES.REQUEST_UNAVAILABLE.PEER_BUSY.TITLE;
             } else if (errorMessage === 'User not found') {
-                displayMessage = '해당 ID를 찾을 수 없어요.';
+                displayMessage = `${MESSAGES.ID_INPUT.NOT_FOUND.TITLE}\n${MESSAGES.ID_INPUT.NOT_FOUND.SUB}`;
             } else if (errorMessage === 'Cannot request mode to yourself') {
-                displayMessage = '내 ID에는 메시지 모드를 신청할 수 없어요.';
+                displayMessage = MESSAGES.ID_INPUT.SELF.TITLE;
             } else if (errorMessage === 'You are blocked by this user') {
                 displayMessage = MESSAGES.REQUEST_UNAVAILABLE.BLOCKED_BY_PEER.TITLE;
             }
