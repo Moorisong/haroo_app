@@ -40,7 +40,7 @@ const AuthStack = () => {
 };
 
 const RootNavigator = () => {
-  const { userToken, isLoading } = useAuth();
+  const { accessToken, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -52,7 +52,7 @@ const RootNavigator = () => {
 
   return (
     <NavigationContainer>
-      {userToken ? <AppStack /> : <AuthStack />}
+      {accessToken ? <AppStack /> : <AuthStack />}
     </NavigationContainer>
   );
 };

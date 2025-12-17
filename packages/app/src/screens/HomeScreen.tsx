@@ -96,6 +96,7 @@ export const HomeScreen: React.FC = () => {
         const status = connection?.status || 'NONE';
 
         if (status === 'PENDING') {
+            if (!connection) return null; // Should not happen if status is PENDING, but for type safety
             const isReceiver = user.id !== connection.requesterId;
             if (isReceiver) {
                 return <PendingReceiverContent connection={connection} onAccept={handleAccept} />;

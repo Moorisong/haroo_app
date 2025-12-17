@@ -69,10 +69,10 @@ export const LandingScreen: React.FC = () => {
                         token: access_token,
                     });
 
-                    const { token: serverToken, user } = backendResponse.data;
+                    const { accessToken, refreshToken, user } = backendResponse.data;
                     
                     // 3. Login to the app
-                    await login(serverToken, user);
+                    await login(accessToken, refreshToken, user);
 
                 } catch (error: any) {
                     console.error('Authentication failed:', error.response?.data || error.message);
