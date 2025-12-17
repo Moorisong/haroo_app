@@ -10,6 +10,7 @@ import {
     ActivityIndicator,
     TouchableOpacity,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 
@@ -142,6 +143,12 @@ export const HomeScreen: React.FC = () => {
                                 userId={user.hashId}
                                 onCopy={handleCopyId}
                             />
+                            <TouchableOpacity
+                                style={styles.settingsButton}
+                                onPress={() => navigation.navigate('Settings')}
+                            >
+                                <Feather name="settings" size={16} color={COLORS.textTertiary} />
+                            </TouchableOpacity>
                         </View>
                     )}
                     <View style={styles.content}>
@@ -277,7 +284,19 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#FDFCF8' },
     safeArea: { flex: 1 },
     scrollContent: { flexGrow: 1 },
-    header: { paddingHorizontal: SPACING.lg, paddingTop: SPACING.md, alignItems: 'flex-end' },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        paddingHorizontal: SPACING.lg,
+        paddingTop: SPACING.md,
+        gap: SPACING.sm,
+    },
+    settingsButton: {
+        padding: SPACING.xs,
+        backgroundColor: 'rgba(0,0,0,0.04)',
+        borderRadius: 14,
+    },
     content: { flex: 1, paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xxl },
     stateContainer: { flex: 1, justifyContent: 'space-between' },
     centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
