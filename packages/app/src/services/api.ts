@@ -123,8 +123,8 @@ export const getUserProfile = async (): Promise<User> => {
 };
 
 export interface SendMessagePayload {
-    message: string;
-    duration: 1 | 3;
+    content: string;
+    modeId: string;
 }
 
 export const sendMessage = async (payload: SendMessagePayload): Promise<any> => {
@@ -133,6 +133,26 @@ export const sendMessage = async (payload: SendMessagePayload): Promise<any> => 
         return response.data;
     } catch (error) {
         console.error('Error sending message:', error);
+        throw error;
+    }
+};
+
+export interface ReceivedMessage {
+    _id: string;
+    modeId: string;
+    sender: string;
+    content: string;
+    isRead: boolean;
+    sentAt: string;
+    createdAt: string;
+}
+
+export const getTodayReceivedMessage = async (): Promise<{ message: ReceivedMessage | null }> => {
+    try {
+        const response = await api.get<{ message: ReceivedMessage | null }>('/messages/received/today');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching today received message:', error);
         throw error;
     }
 };
