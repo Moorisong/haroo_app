@@ -2,6 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import Message from '../models/Message';
 import MessageMode from '../models/MessageMode';
 
+// 24시간을 밀리초로 계산
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
 // @desc    Send a message (Daily limit: 1)
 // @route   POST /messages
 // @access  Private
@@ -64,12 +67,18 @@ export const sendMessage = async (req: Request, res: Response, next: NextFunctio
             throw new Error('You have already sent a message today');
         }
 
-        // 6. 메시지 생성
+        // 6. 메시지 생성 (expiresAt = sentAt + 24시간)
+        const sentAt = new Date();
+        const expiresAt = new Date(sentAt.getTime() + TWENTY_FOUR_HOURS_MS);
+
         const message = await Message.create({
             modeId: mode._id,
             sender: senderId,
             content,
             isRead: false,
+            status: 'ACTIVE',
+            sentAt,
+            expiresAt,
         });
 
         // TODO: Push Notification Trigger (Future Work)
@@ -80,12 +89,13 @@ export const sendMessage = async (req: Request, res: Response, next: NextFunctio
     }
 };
 
-// @desc    Get message received today
+// @desc    Get active message (ACTIVE + not expired)
 // @route   GET /messages/received/today
 // @access  Private
 export const getTodayMessage = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userId = req.user._id;
+        const now = new Date();
 
         // 1. 현재 활성 모드 찾기
         const activeMode = await MessageMode.findOne({
@@ -94,7 +104,7 @@ export const getTodayMessage = async (req: Request, res: Response, next: NextFun
         });
 
         if (!activeMode) {
-            // 활성 모드가 없으면 오늘 받은 메시지도 없음
+            // 활성 모드가 없으면 받을 메시지도 없음
             res.json({ message: null });
             return;
         }
@@ -105,21 +115,13 @@ export const getTodayMessage = async (req: Request, res: Response, next: NextFun
                 ? activeMode.recipient
                 : activeMode.initiator;
 
-        // 3. 오늘 날짜 범위
-        const startOfDay = new Date();
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date();
-        endOfDay.setHours(23, 59, 59, 999);
-
-        // 4. 상대방이 보낸 오늘 메시지 찾기 (읽음 처리는 별도 API에서)
+        // 3. ACTIVE 상태 + 만료되지 않은 메시지 찾기 (가장 최근)
         const message = await Message.findOne({
             modeId: activeMode._id,
             sender: partnerId,
-            sentAt: {
-                $gte: startOfDay,
-                $lte: endOfDay,
-            },
-        });
+            status: 'ACTIVE',
+            expiresAt: { $gt: now }, // 아직 만료되지 않음
+        }).sort({ sentAt: -1 }); // 가장 최근 메시지
 
         res.json({ message });
     } catch (error) {
