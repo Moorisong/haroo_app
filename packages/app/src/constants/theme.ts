@@ -25,6 +25,12 @@ export const COLORS = {
     // 기타
     border: '#E5DED5',
     divider: '#F0EBE5',
+
+    // 피드백 (Feedback)
+    success: '#4CAF50', // Green
+    successLight: '#E8F5E9', // Light Green
+    danger: '#F44336', // Red
+    dangerLight: '#FFEBEE', // Light Red
 };
 
 export const FONTS = {
