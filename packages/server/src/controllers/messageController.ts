@@ -121,7 +121,9 @@ export const getTodayMessage = async (req: Request, res: Response, next: NextFun
             sender: partnerId,
             status: 'ACTIVE',
             expiresAt: { $gt: now }, // 아직 만료되지 않음
-        }).sort({ sentAt: -1 }); // 가장 최근 메시지
+        })
+            .populate('sender', 'hashId') // sender의 hashId 포함
+            .sort({ sentAt: -1 }); // 가장 최근 메시지
 
         res.json({ message });
     } catch (error) {
