@@ -84,12 +84,17 @@ const setupTestData = async () => {
         console.log('MessageMode 생성됨:', activeMode._id);
 
         // 6. Message 생성 (sender가 나에게 보낸 메시지)
+        const sentAt = new Date();
+        const expiresAt = new Date(sentAt.getTime() + 24 * 60 * 60 * 1000); // +24시간
+
         const message = await Message.create({
             modeId: activeMode._id,
             sender: sender._id,
             content: '오늘 하루도 수고했어요 💕',
             isRead: false,
-            sentAt: new Date(),
+            status: 'ACTIVE',
+            sentAt,
+            expiresAt,
         });
         console.log('Message 생성됨:', message._id);
 
