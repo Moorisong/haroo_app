@@ -24,4 +24,5 @@ export interface User {
     settings?: {
         displayMode: 'WIDGET' | 'NOTIFICATION';
     };
+    blockedUsers?: string[];
 }

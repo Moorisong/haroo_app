@@ -13,7 +13,7 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
 import { BubbleBackground } from '../components/BubbleBackground';
-import { getTodayReceivedMessage, markMessageAsRead, getUserProfile, ReceivedMessage } from '../services/api';
+import { getTodayReceivedMessage, markMessageAsRead, getUserProfile, ReceivedMessage, blockUser } from '../services/api';
 
 export const ReceiveScreen: React.FC = () => {
     const navigation = useNavigation<any>();
@@ -35,14 +35,26 @@ export const ReceiveScreen: React.FC = () => {
             setDisplayMode(profileResponse.settings?.displayMode || 'NOTIFICATION');
 
             // 메시지가 있고 아직 읽지 않은 경우 읽음 처리
-            if (messageResponse.message && !messageResponse.message.isRead) {
-                try {
-                    await markMessageAsRead(messageResponse.message._id);
-                    // 로컬 상태도 업데이트
-                    setMessage(prev => prev ? { ...prev, isRead: true } : null);
-                } catch (readError) {
-                    console.error('Failed to mark message as read:', readError);
-                    // 읽음 처리 실패해도 메시지는 정상 표시
+            if (messageResponse.message) {
+                const messageSenderValues = messageResponse.message.sender;
+                const senderHashId = typeof messageSenderValues === 'string'
+                    ? messageSenderValues
+                    : messageSenderValues.hashId;
+
+                // 차단 여부 확인
+                if (profileResponse.blockedUsers?.includes(senderHashId)) {
+                    setIsBlocked(true);
+                }
+
+                if (!messageResponse.message.isRead) {
+                    try {
+                        await markMessageAsRead(messageResponse.message._id);
+                        // 로컬 상태도 업데이트
+                        setMessage(prev => prev ? { ...prev, isRead: true } : null);
+                    } catch (readError) {
+                        console.error('Failed to mark message as read:', readError);
+                        // 읽음 처리 실패해도 메시지는 정상 표시
+                    }
                 }
             }
         } catch (error) {
@@ -72,11 +84,20 @@ export const ReceiveScreen: React.FC = () => {
     };
 
     const handleBlock = () => {
+        if (!message) return;
+
+        const senderHashId = typeof message.sender === 'string' ? message.sender : message.sender.hashId;
+
         if (Platform.OS === 'web') {
             const confirmed = window.confirm('이 사용자를 차단하시겠습니까?\n더 이상 메시지를 받을 수 없게 됩니다.');
             if (confirmed) {
-                setIsBlocked(true);
-                // TODO: 실제 차단 API 연동
+                blockUser(senderHashId)
+                    .then(() => {
+                        setIsBlocked(true);
+                    })
+                    .catch(() => {
+                        alert('차단에 실패했습니다.');
+                    });
             }
         } else {
             Alert.alert(
@@ -87,9 +108,14 @@ export const ReceiveScreen: React.FC = () => {
                     {
                         text: '차단하기',
                         style: 'destructive',
-                        onPress: () => {
-                            setIsBlocked(true);
-                            // TODO: 실제 차단 API 연동
+                        onPress: async () => {
+                            try {
+                                await blockUser(senderHashId);
+                                setIsBlocked(true);
+                            } catch (error) {
+                                console.error(error);
+                                Alert.alert('오류', '차단에 실패했습니다.');
+                            }
                         }
                     }
                 ]

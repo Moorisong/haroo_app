@@ -140,7 +140,7 @@ export const sendMessage = async (payload: SendMessagePayload): Promise<any> => 
 export interface ReceivedMessage {
     _id: string;
     modeId: string;
-    sender: string;
+    sender: { _id: string; hashId: string } | string;
     content: string;
     isRead: boolean;
     sentAt: string;
@@ -177,6 +177,16 @@ export const updateUserSettings = async (settings: Partial<UserSettings>): Promi
         return response.data;
     } catch (error) {
         console.error('Error updating user settings:', error);
+        throw error;
+    }
+};
+
+export const blockUser = async (targetHashId: string): Promise<any> => {
+    try {
+        const response = await api.post('/users/block', { targetHashId });
+        return response.data;
+    } catch (error) {
+        console.error('Error blocking user:', error);
         throw error;
     }
 };
