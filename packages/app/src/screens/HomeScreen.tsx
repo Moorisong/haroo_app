@@ -9,6 +9,9 @@ import {
     ScrollView,
     ActivityIndicator,
     TouchableOpacity,
+    Animated,
+    Easing,
+    Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -16,7 +19,8 @@ import * as Clipboard from 'expo-clipboard';
 
 import { COLORS, FONT_SIZES, SPACING, FONTS } from '../constants/theme';
 import { Connection, User } from '../types';
-import { getCurrentMode, getUserProfile, acceptMode, getTodayReceivedMessage, ReceivedMessage } from '../services/api';
+import { getCurrentMode, getUserProfile, acceptMode, rejectMode, blockRequest, getTodayReceivedMessage, ReceivedMessage } from '../services/api';
+import { MESSAGES } from '../constants/messages';
 
 import { BubbleBackground } from '../components/BubbleBackground';
 import { UserIdCard } from '../components/UserIdCard';
@@ -30,6 +34,31 @@ export const HomeScreen: React.FC = () => {
     const [receivedMessage, setReceivedMessage] = useState<ReceivedMessage | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Toast state
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+    const toastOpacity = React.useRef(new Animated.Value(0)).current;
+
+    const showToastMsg = (message: string) => {
+        setToastMessage(message);
+        setShowToast(true);
+        Animated.sequence([
+            Animated.timing(toastOpacity, {
+                toValue: 1,
+                duration: 200,
+                easing: Easing.ease,
+                useNativeDriver: true,
+            }),
+            Animated.delay(1200),
+            Animated.timing(toastOpacity, {
+                toValue: 0,
+                duration: 300,
+                easing: Easing.ease,
+                useNativeDriver: true,
+            }),
+        ]).start(() => setShowToast(false));
+    };
 
     const fetchData = useCallback(async () => {
         try {
@@ -68,10 +97,33 @@ export const HomeScreen: React.FC = () => {
     const handleAccept = async (id: string) => {
         try {
             await acceptMode(id);
-            Alert.alert('수락 완료', '메시지 모드가 활성화되었습니다.');
-            await fetchData(); // Re-fetch data to update UI to ACTIVE_PERIOD
+            // Alert removed as per request
+            await fetchData();
         } catch (err) {
             Alert.alert('수락 실패', '요청을 수락하는 중 오류가 발생했습니다.');
+            console.error(err);
+        }
+    };
+
+    const handleReject = async (id: string) => {
+        try {
+            await rejectMode(id);
+            // Alert removed as per request
+            await fetchData();
+        } catch (err) {
+            Alert.alert('거절 실패', '요청을 거절하는 중 오류가 발생했습니다.');
+            console.error(err);
+        }
+    };
+
+    const handleBlockRequest = async (id: string) => {
+        try {
+            await blockRequest(id);
+            // Show Toast and refresh
+            showToastMsg('차단했어요');
+            await fetchData();
+        } catch (err) {
+            Alert.alert('차단 실패', '요청을 차단하는 중 오류가 발생했습니다.');
             console.error(err);
         }
     };
@@ -101,10 +153,25 @@ export const HomeScreen: React.FC = () => {
         const status = connection?.status || 'NONE';
 
         if (status === 'PENDING') {
-            if (!connection) return null; // Should not happen if status is PENDING, but for type safety
-            const isReceiver = user.id !== connection.requesterId;
+            if (!connection) return null;
+            // connection.initiator can be string or object dependent on populate
+            // Since backend populates it, it should be an object. We check _id.
+            // user.id comes from profile generic response which has id mapped from _id.
+            const initiatorId = typeof connection.initiator === 'string'
+                ? connection.initiator
+                : connection.initiator._id || (connection.initiator as any).id; // Fallback just in case
+
+            const isReceiver = user.id !== initiatorId.toString();
+
             if (isReceiver) {
-                return <PendingReceiverContent connection={connection} onAccept={handleAccept} />;
+                return (
+                    <PendingReceiverContent
+                        connection={connection}
+                        onAccept={handleAccept}
+                        onReject={handleReject}
+                        onBlock={handleBlockRequest}
+                    />
+                );
             }
             return <PendingSenderContent />;
         }
@@ -155,6 +222,12 @@ export const HomeScreen: React.FC = () => {
                         {renderContent()}
                     </View>
                 </ScrollView>
+                {/* Toast Message */}
+                {showToast && (
+                    <Animated.View style={[styles.toast, { opacity: toastOpacity }]}>
+                        <Text style={styles.toastText}>{toastMessage}</Text>
+                    </Animated.View>
+                )}
             </SafeAreaView>
         </View>
     );
@@ -193,31 +266,108 @@ const PendingSenderContent: React.FC = () => (
     </View>
 );
 
-const PendingReceiverContent: React.FC<{ connection: Connection; onAccept: (id: string) => Promise<void> }> = ({ connection, onAccept }) => {
-    const [isAccepting, setIsAccepting] = useState(false);
+interface PendingReceiverProps {
+    connection: Connection;
+    onAccept: (id: string) => Promise<void>;
+    onReject: (id: string) => Promise<void>;
+    onBlock: (id: string) => Promise<void>;
+}
 
-    const handlePress = async () => {
-        setIsAccepting(true);
-        await onAccept(connection.id);
-        setIsAccepting(false);
+const PendingReceiverContent: React.FC<PendingReceiverProps> = ({ connection, onAccept, onReject, onBlock }) => {
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    const handleAcceptPress = async () => {
+        setIsProcessing(true);
+        await onAccept(connection._id);
+        setIsProcessing(false);
+    };
+
+    const handleRejectPress = async () => {
+        if (Platform.OS === 'web') {
+            if (window.confirm('거절하시겠습니까?\n상대방에게 알림이 가지 않습니다.')) {
+                setIsProcessing(true);
+                await onReject(connection._id);
+                setIsProcessing(false);
+            }
+        } else {
+            Alert.alert(
+                '거절하시겠습니까?',
+                '상대방에게 알림이 가지 않습니다.',
+                [
+                    { text: '취소', style: 'cancel' },
+                    {
+                        text: '거절하기',
+                        style: 'destructive',
+                        onPress: async () => {
+                            setIsProcessing(true);
+                            await onReject(connection._id);
+                            setIsProcessing(false);
+                        }
+                    }
+                ]
+            );
+        }
+    };
+
+    const handleBlockPress = async () => {
+        if (Platform.OS === 'web') {
+            if (window.confirm('차단하시겠습니까?\n이 발신자는 더 이상 신청이나 메시지를 보낼 수 없습니다.')) {
+                setIsProcessing(true);
+                await onBlock(connection._id);
+                setIsProcessing(false);
+            }
+        } else {
+            Alert.alert(
+                '차단하시겠습니까?',
+                '이 발신자는 더 이상 신청이나 메시지를 보낼 수 없습니다.',
+                [
+                    { text: '취소', style: 'cancel' },
+                    {
+                        text: '차단하기',
+                        style: 'destructive',
+                        onPress: async () => {
+                            setIsProcessing(true);
+                            await onBlock(connection._id);
+                            setIsProcessing(false);
+                        }
+                    }
+                ]
+            );
+        }
     };
 
     return (
         <View style={styles.stateContainer}>
             <View style={styles.centerContent}>
                 <View style={styles.mainTextContainer}>
-                    <Text style={styles.mainText}>메시지 모드 요청이{'\n'}도착했어요.</Text>
+                    <Text style={styles.mainText}>{MESSAGES.PENDING_RECEIVER.TITLE}</Text>
                 </View>
                 <Text style={styles.subText}>
-                    수락하면 상대방과{'\n'}메시지 모드가 활성화돼요.
+                    {MESSAGES.PENDING_RECEIVER.SUB}
                 </Text>
             </View>
             <View style={styles.buttonContainer}>
                 <PrimaryButton
-                    title={isAccepting ? "수락하는 중..." : "요청 수락하기"}
-                    onPress={handlePress}
-                    disabled={isAccepting}
+                    title={isProcessing ? "처리 중..." : MESSAGES.PENDING_RECEIVER.BUTTON.ACCEPT}
+                    onPress={handleAcceptPress}
+                    disabled={isProcessing}
                 />
+
+                <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={handleRejectPress}
+                    disabled={isProcessing}
+                >
+                    <Text style={styles.secondaryButtonText}>{MESSAGES.PENDING_RECEIVER.BUTTON.REJECT}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={styles.textButton}
+                    onPress={handleBlockPress}
+                    disabled={isProcessing}
+                >
+                    <Text style={styles.textButtonLabel}>{MESSAGES.PENDING_RECEIVER.BUTTON.BLOCK}</Text>
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -323,5 +473,46 @@ const styles = StyleSheet.create({
         color: COLORS.success,
         fontWeight: '500',
     },
-    errorText: { color: COLORS.danger, textAlign: 'center' }
+    errorText: { color: COLORS.danger, textAlign: 'center' },
+    secondaryButton: {
+        width: '100%',
+        padding: SPACING.md,
+        alignItems: 'center',
+        marginTop: SPACING.sm,
+        backgroundColor: '#F5F5F5', // Light gray background
+        borderRadius: 16,
+    },
+    secondaryButtonText: {
+        fontSize: FONT_SIZES.md,
+        color: COLORS.textPrimary,
+        fontFamily: FONTS.medium,
+    },
+    textButton: {
+        width: '100%',
+        padding: SPACING.md,
+        alignItems: 'center',
+        marginTop: SPACING.xs,
+    },
+    textButtonLabel: {
+        fontSize: FONT_SIZES.sm,
+        color: COLORS.textTertiary,
+        textDecorationLine: 'underline',
+    },
+    toast: {
+        position: 'absolute',
+        bottom: 100,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+    },
+    toastText: {
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        color: '#fff',
+        paddingHorizontal: SPACING.lg,
+        paddingVertical: SPACING.sm,
+        borderRadius: 20,
+        fontSize: FONT_SIZES.sm,
+        fontFamily: FONTS.medium,
+        overflow: 'hidden',
+    },
 });
