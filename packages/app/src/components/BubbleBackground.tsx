@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Dimensions } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { COLORS } from '../constants/theme';
 
