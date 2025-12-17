@@ -111,7 +111,7 @@ export const getTodayMessage = async (req: Request, res: Response, next: NextFun
         const endOfDay = new Date();
         endOfDay.setHours(23, 59, 59, 999);
 
-        // 4. 상대방이 보낸 오늘 메시지 찾기
+        // 4. 상대방이 보낸 오늘 메시지 찾기 (읽음 처리는 별도 API에서)
         const message = await Message.findOne({
             modeId: activeMode._id,
             sender: partnerId,
@@ -121,13 +121,57 @@ export const getTodayMessage = async (req: Request, res: Response, next: NextFun
             },
         });
 
-        // 5. 메시지가 있으면 읽음 처리 (상세 조회 시 읽음으로 간주)
-        if (message && !message.isRead) {
-            message.isRead = true;
-            await message.save();
+        res.json({ message });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Mark a message as read
+// @route   POST /messages/:id/read
+// @access  Private
+export const markMessageAsRead = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const messageId = req.params.id;
+        const userId = req.user._id;
+
+        // 1. 메시지 찾기
+        const message = await Message.findById(messageId);
+        if (!message) {
+            res.status(404);
+            throw new Error('Message not found');
         }
 
-        res.json({ message });
+        // 2. 해당 메시지의 모드 찾기
+        const mode = await MessageMode.findById(message.modeId);
+        if (!mode) {
+            res.status(404);
+            throw new Error('Message Mode not found');
+        }
+
+        // 3. 권한 검증 (수신자만 읽음 처리 가능)
+        // 메시지 sender가 아닌 사람 = 수신자
+        const isReceiver = message.sender.toString() !== userId.toString();
+        const isParticipant =
+            mode.initiator.toString() === userId.toString() ||
+            mode.recipient.toString() === userId.toString();
+
+        if (!isParticipant || !isReceiver) {
+            res.status(403);
+            throw new Error('Not authorized to mark this message as read');
+        }
+
+        // 4. 이미 읽은 메시지인 경우
+        if (message.isRead) {
+            res.json({ message: 'Message already read', data: message });
+            return;
+        }
+
+        // 5. 읽음 처리
+        message.isRead = true;
+        await message.save();
+
+        res.json({ message: 'Message marked as read', data: message });
     } catch (error) {
         next(error);
     }
