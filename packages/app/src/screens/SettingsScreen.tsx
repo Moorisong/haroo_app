@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     View,
     Text,
@@ -7,27 +7,83 @@ import {
     Platform,
     ScrollView,
     Alert,
+    Animated,
+    Easing,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
 import { BubbleBackground } from '../components/BubbleBackground';
 import { UserIdCard } from '../components/UserIdCard';
+import { getUserProfile, updateUserSettings } from '../services/api';
 
 type DisplayMode = 'WIDGET' | 'NOTIFICATION';
 
 export const SettingsScreen: React.FC = () => {
     const navigation = useNavigation<any>();
 
-    // 실제로는 저장된 설정을 불러와야 함
     const [displayMode, setDisplayMode] = useState<DisplayMode>('NOTIFICATION');
-    // TODO: 전역 상태 관리 도입 시 교체 필요
-    const [userId] = useState('haru_x9f3a2');
+    const [userId, setUserId] = useState('');
+    const [showToast, setShowToast] = useState(false);
+    const toastOpacity = useRef(new Animated.Value(0)).current;
+
+    // 유저 프로필 조회
+    useFocusEffect(
+        useCallback(() => {
+            const fetchProfile = async () => {
+                try {
+                    const profile = await getUserProfile();
+                    setUserId(profile.hashId || '');
+                    setDisplayMode(profile.settings?.displayMode || 'NOTIFICATION');
+                } catch (error) {
+                    console.error('Failed to fetch profile:', error);
+                }
+            };
+            fetchProfile();
+        }, [])
+    );
 
     const handleCopyId = async () => {
+        if (!userId) return;
         await Clipboard.setStringAsync(userId);
         Alert.alert('복사 완료', 'ID가 클립보드에 복사되었습니다.');
+    };
+
+    // 토스트 표시 함수
+    const showSavedToast = () => {
+        setShowToast(true);
+        Animated.sequence([
+            Animated.timing(toastOpacity, {
+                toValue: 1,
+                duration: 200,
+                easing: Easing.ease,
+                useNativeDriver: true,
+            }),
+            Animated.delay(1200),
+            Animated.timing(toastOpacity, {
+                toValue: 0,
+                duration: 300,
+                easing: Easing.ease,
+                useNativeDriver: true,
+            }),
+        ]).start(() => setShowToast(false));
+    };
+
+    // 표시 방식 변경 핸들러
+    const handleDisplayModeChange = async (mode: DisplayMode) => {
+        if (mode === displayMode) return;
+
+        try {
+            setDisplayMode(mode); // 먼저 UI 업데이트
+            await updateUserSettings({ displayMode: mode });
+            showSavedToast();
+        } catch (error) {
+            console.error('Failed to update settings:', error);
+            // 실패 시 원래 값으로 롤백
+            setDisplayMode(displayMode);
+            Alert.alert('저장 실패', '설정을 저장하는 데 실패했습니다.');
+        }
     };
 
     return (
@@ -71,18 +127,25 @@ export const SettingsScreen: React.FC = () => {
                                 label="홈 화면 위젯"
                                 icon="layout"
                                 selected={displayMode === 'WIDGET'}
-                                onPress={() => setDisplayMode('WIDGET')}
+                                onPress={() => handleDisplayModeChange('WIDGET')}
                             />
                             <OptionCard
                                 label="알림바 고정"
                                 icon="bell"
                                 selected={displayMode === 'NOTIFICATION'}
-                                onPress={() => setDisplayMode('NOTIFICATION')}
+                                onPress={() => handleDisplayModeChange('NOTIFICATION')}
                             />
                         </View>
                     </View>
                 </View>
             </ScrollView>
+
+            {/* 토스트 메시지 */}
+            {showToast && (
+                <Animated.View style={[styles.toast, { opacity: toastOpacity }]}>
+                    <Text style={styles.toastText}>저장되었습니다</Text>
+                </Animated.View>
+            )}
         </View>
     );
 };
@@ -228,5 +291,22 @@ const styles = StyleSheet.create({
         height: 1,
         backgroundColor: COLORS.divider,
         marginBottom: SPACING.xl,
+    },
+    toast: {
+        position: 'absolute',
+        bottom: 100,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+    },
+    toastText: {
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        color: '#fff',
+        paddingHorizontal: SPACING.lg,
+        paddingVertical: SPACING.sm,
+        borderRadius: 20,
+        fontSize: FONT_SIZES.sm,
+        fontFamily: FONTS.medium,
+        overflow: 'hidden',
     },
 });
