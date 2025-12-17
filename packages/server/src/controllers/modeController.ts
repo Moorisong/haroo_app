@@ -4,11 +4,18 @@ import MessageMode from '../models/MessageMode';
 import Message from '../models/Message'; // Import Message model
 
 // 유틸: 유저가 이미 활성 상태의 모드(PENDING or ACTIVE)가 있는지 확인
-const hasActiveMode = async (userId: string) => {
-    const mode = await MessageMode.findOne({
+const hasActiveMode = async (userId: string, excludeModeId?: string) => {
+    const query: any = {
         $or: [{ initiator: userId }, { recipient: userId }],
         status: { $in: ['PENDING', 'ACTIVE_PERIOD'] },
-    });
+    };
+
+    // 현재 처리 중인 모드는 제외 (수락 시 자기 자신 검출 방지)
+    if (excludeModeId) {
+        query._id = { $ne: excludeModeId };
+    }
+
+    const mode = await MessageMode.findOne(query);
     return !!mode;
 };
 
@@ -103,7 +110,8 @@ export const acceptMode = async (req: Request, res: Response, next: NextFunction
         }
 
         // 3. 중복 상태 재확인 (그 사이 다른 모드가 생겼을 수도 있음)
-        if (await hasActiveMode(userId.toString())) {
+        // 자기 자신(지금 수락하려는 이 모드)은 제외하고 체크해야 함
+        if (await hasActiveMode(userId.toString(), modeId)) {
             res.status(400);
             throw new Error('You already have an active mode');
         }
@@ -124,6 +132,89 @@ export const acceptMode = async (req: Request, res: Response, next: NextFunction
         await mode.save();
 
         res.json(mode);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Reject a message mode request
+// @route   POST /modes/reject/:id
+// @access  Private
+export const rejectMode = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const modeId = req.params.id;
+        const userId = req.user._id;
+
+        const mode = await MessageMode.findById(modeId);
+
+        if (!mode) {
+            res.status(404);
+            throw new Error('Mode request not found');
+        }
+
+        // 요청 받은 당사자만 거절 가능
+        if (mode.recipient.toString() !== userId.toString()) {
+            res.status(403);
+            throw new Error('Not authorized to reject this request');
+        }
+
+        if (mode.status !== 'PENDING') {
+            res.status(400);
+            throw new Error('Mode is not in pending state');
+        }
+
+        // 상태 변경: REJECTED
+        mode.status = 'REJECTED';
+        await mode.save();
+
+        res.json(mode);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Block a message mode request
+// @route   POST /modes/block/:id
+// @access  Private
+export const blockMode = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const modeId = req.params.id;
+        const userId = req.user._id;
+
+        const mode = await MessageMode.findById(modeId);
+
+        if (!mode) {
+            res.status(404);
+            throw new Error('Mode request not found');
+        }
+
+        // 요청 받은 당사자만 차단 가능
+        if (mode.recipient.toString() !== userId.toString()) {
+            res.status(403);
+            throw new Error('Not authorized to block this request');
+        }
+
+        if (mode.status !== 'PENDING') {
+            res.status(400);
+            throw new Error('Mode is not in pending state');
+        }
+
+        // 1. 유저 차단 (User.blockedUsers 에 initiator 추가)
+        const currentUser = await User.findById(userId);
+        const initiatorId = mode.initiator.toString();
+
+        // initiator의 hashId 가져오기
+        const initiator = await User.findById(initiatorId);
+        if (initiator && currentUser && !currentUser.blockedUsers.includes(initiator.hashId)) {
+            currentUser.blockedUsers.push(initiator.hashId);
+            await currentUser.save();
+        }
+
+        // 2. 모드 상태 변경: BLOCKED
+        mode.status = 'BLOCKED';
+        await mode.save();
+
+        res.json({ message: 'Blocked successfully', mode, blockedUsers: currentUser?.blockedUsers });
     } catch (error) {
         next(error);
     }
