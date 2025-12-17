@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -9,24 +9,41 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { BubbleBackground } from '../components/BubbleBackground';
-import { sendMessage } from '../services/api';
+import { sendMessage, getCurrentMode } from '../services/api';
 import { AxiosError } from 'axios';
-
-type PriceOption = 500 | 1000;
-type DurationOption = 1 | 3;
+import { Connection } from '../types';
 
 export const SendScreen: React.FC = () => {
     const navigation = useNavigation();
 
     const [message, setMessage] = useState('');
-    const [selectedPrice, setSelectedPrice] = useState<PriceOption>(500);
     const [isSending, setIsSending] = useState(false);
+    const [currentMode, setCurrentMode] = useState<Connection | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchCurrentMode = async () => {
+            try {
+                const mode = await getCurrentMode();
+                setCurrentMode(mode);
+            } catch (error) {
+                console.error('Failed to fetch current mode:', error);
+                Alert.alert('오류', '현재 모드를 불러오는데 실패했습니다.', [
+                    { text: '확인', onPress: () => navigation.goBack() }
+                ]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchCurrentMode();
+    }, [navigation]);
 
     const checkLimit = (text: string) => {
         if (text.length <= 40) {
@@ -40,11 +57,14 @@ export const SendScreen: React.FC = () => {
             return;
         }
 
-        const duration: DurationOption = selectedPrice === 500 ? 1 : 3;
+        if (!currentMode?.id) {
+            Alert.alert('오류', '활성화된 메시지 모드가 없습니다.');
+            return;
+        }
 
         setIsSending(true);
         try {
-            await sendMessage({ message: message.trim(), duration });
+            await sendMessage({ content: message.trim(), modeId: currentMode.id });
             Alert.alert('전송 완료', '메시지가 성공적으로 전송되었습니다.', [
                 { text: '확인', onPress: () => navigation.goBack() }
             ]);
@@ -56,6 +76,15 @@ export const SendScreen: React.FC = () => {
             setIsSending(false);
         }
     };
+
+    if (isLoading) {
+        return (
+            <View style={[styles.container, styles.centerContent]}>
+                <BubbleBackground />
+                <ActivityIndicator size="large" color={COLORS.accent} />
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -99,38 +128,12 @@ export const SendScreen: React.FC = () => {
                             </Text>
                         </View>
 
-                        {/* 가격 선택 섹션 */}
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>마음의 무게를 선택해주세요.</Text>
-
-                            <View style={styles.optionContainer}>
-                                <PriceOptionCard
-                                    price={500}
-                                    label="1일"
-                                    description="오늘 떠오른 마음"
-                                    selected={selectedPrice === 500}
-                                    onPress={() => setSelectedPrice(500)}
-                                />
-                                <PriceOptionCard
-                                    price={1000}
-                                    label="3일"
-                                    description="조금 더 깊은 마음, 이어지는 시간"
-                                    selected={selectedPrice === 1000}
-                                    onPress={() => setSelectedPrice(1000)}
-                                />
-                            </View>
-
-                            <Text style={styles.philosophyDescription}>
-                                선택한 기간 동안 메시지 모드가 활성화됩니다.{'\n'}짧게 또는 조금 더 길게, 마음을 전하는 시간을 선택하세요.
-                            </Text>
-                        </View>
-
-                        {/* 결제 버튼 */}
+                        {/* 전송 버튼 */}
                         <PrimaryButton
-                            title={isSending ? '전송 중...' : `${selectedPrice.toLocaleString()}원으로 보내기`}
+                            title={isSending ? '전송 중...' : '메시지 보내기'}
                             onPress={handleSend}
                             disabled={message.trim().length === 0 || isSending}
-                            style={styles.payButton}
+                            style={styles.sendButton}
                         />
                     </View>
                 </KeyboardAvoidingView>
@@ -139,40 +142,14 @@ export const SendScreen: React.FC = () => {
     );
 };
 
-// 가격 선택 카드 컴포넌트
-const PriceOptionCard: React.FC<{
-    price: number;
-    label: string;
-    description: string;
-    selected: boolean;
-    onPress: () => void
-}> = ({ price, label, description, selected, onPress }) => (
-    <TouchableOpacity
-        style={[styles.optionCard, selected && styles.optionCardSelected]}
-        onPress={onPress}
-        activeOpacity={0.9}
-    >
-        <View style={styles.optionHeader}>
-            <View style={styles.optionRadio}>
-                {selected && <View style={styles.optionRadioInner} />}
-            </View>
-            <Text style={[styles.optionPrice, selected && styles.optionTextSelected]}>
-                {price.toLocaleString()}원
-            </Text>
-            <View style={styles.optionBadge}>
-                <Text style={styles.optionBadgeText}>{label}</Text>
-            </View>
-        </View>
-        <Text style={[styles.optionDescription, selected && styles.optionTextSelected]}>
-            {description}
-        </Text>
-    </TouchableOpacity>
-);
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FDFCF8',
+    },
+    centerContent: {
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     header: {
         flexDirection: 'row',
@@ -239,82 +216,7 @@ const styles = StyleSheet.create({
         color: COLORS.textSecondary,
         fontFamily: FONTS.regular,
     },
-    sectionTitle: {
-        fontSize: FONT_SIZES.lg,
-        fontFamily: FONTS.bold,
-        color: COLORS.textPrimary,
-        marginBottom: SPACING.md,
-    },
-    optionContainer: {
-        gap: SPACING.md,
-        marginBottom: SPACING.lg,
-    },
-    optionCard: {
-        backgroundColor: 'rgba(255,255,255,0.6)',
-        borderWidth: 1,
-        borderColor: COLORS.border,
-        borderRadius: 12,
-        padding: SPACING.md,
-    },
-    optionCardSelected: {
-        backgroundColor: '#FFFBF5',
-        borderColor: COLORS.accent,
-    },
-    optionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: SPACING.xs,
-    },
-    optionRadio: {
-        width: 20,
-        height: 20,
-        borderRadius: 10,
-        borderWidth: 2,
-        borderColor: COLORS.divider,
-        marginRight: SPACING.sm,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    optionRadioInner: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: COLORS.accent,
-    },
-    optionPrice: {
-        fontSize: FONT_SIZES.lg,
-        fontFamily: FONTS.bold,
-        color: COLORS.textSecondary,
-        marginRight: SPACING.sm,
-    },
-    optionBadge: {
-        backgroundColor: COLORS.accentLight,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 4,
-    },
-    optionBadgeText: {
-        fontSize: FONT_SIZES.xs,
-        color: COLORS.textPrimary,
-        fontFamily: FONTS.bold,
-    },
-    optionDescription: {
-        fontSize: FONT_SIZES.sm,
-        color: COLORS.textTertiary,
-        fontFamily: FONTS.regular,
-        paddingLeft: 28,
-    },
-    optionTextSelected: {
-        color: COLORS.textPrimary,
-        borderColor: COLORS.accent,
-    },
-    philosophyDescription: {
-        fontSize: FONT_SIZES.sm,
-        color: COLORS.textTertiary,
-        textAlign: 'center',
-        lineHeight: 20,
-    },
-    payButton: {
+    sendButton: {
         marginTop: SPACING.sm,
     },
 });
