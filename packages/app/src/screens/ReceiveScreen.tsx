@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -7,26 +7,58 @@ import {
     Alert,
     ScrollView,
     Platform,
+    ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
 import { BubbleBackground } from '../components/BubbleBackground';
+import { getTodayReceivedMessage, ReceivedMessage } from '../services/api';
 
-interface ReceiveScreenProps {
-    onBack: () => void;
-    onSettings: () => void;
-}
+export const ReceiveScreen: React.FC = () => {
+    const navigation = useNavigation<any>();
 
-export const ReceiveScreen: React.FC<ReceiveScreenProps> = ({ onBack, onSettings }) => {
-    // 테스트용 메시지 데이터
-    const [message] = useState("오늘 하루는 어땠나요? 잠시 하늘을 올려다보는 여유를 가졌으면 좋겠어요. 당신의 하루가 평안하기를 바랍니다.");
+    const [message, setMessage] = useState<ReceivedMessage | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const [isBlocked, setIsBlocked] = useState(false);
+
+    const fetchMessage = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            const response = await getTodayReceivedMessage();
+            setMessage(response.message);
+        } catch (error) {
+            console.error('Failed to fetch message:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // 화면 진입 시 메시지 조회 (화면이 focus될 때마다)
+    useFocusEffect(
+        useCallback(() => {
+            fetchMessage();
+        }, [fetchMessage])
+    );
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = date.getHours();
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const period = hours >= 12 ? '오후' : '오전';
+        const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
+        return `${year}.${month}.${day} ${period} ${displayHours}:${minutes}`;
+    };
 
     const handleBlock = () => {
         if (Platform.OS === 'web') {
             const confirmed = window.confirm('이 사용자를 차단하시겠습니까?\n더 이상 메시지를 받을 수 없게 됩니다.');
             if (confirmed) {
                 setIsBlocked(true);
+                // TODO: 실제 차단 API 연동
             }
         } else {
             Alert.alert(
@@ -48,8 +80,40 @@ export const ReceiveScreen: React.FC<ReceiveScreenProps> = ({ onBack, onSettings
     };
 
     const handleSettings = () => {
-        onSettings();
+        navigation.navigate('Settings');
     };
+
+    // 로딩 중
+    if (isLoading) {
+        return (
+            <View style={[styles.container, styles.centerContent]}>
+                <BubbleBackground />
+                <ActivityIndicator size="large" color={COLORS.accent} />
+            </View>
+        );
+    }
+
+    // 메시지가 없는 경우
+    if (!message) {
+        return (
+            <View style={styles.container}>
+                <BubbleBackground />
+
+                {/* 헤더 */}
+                <View style={styles.header}>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                        <Feather name="arrow-left" size={24} color={COLORS.textPrimary} />
+                    </TouchableOpacity>
+                    <Text style={styles.headerTitle}>받은 메시지</Text>
+                </View>
+
+                <View style={[styles.content, styles.centerContent]}>
+                    <Feather name="inbox" size={48} color={COLORS.textTertiary} />
+                    <Text style={styles.emptyText}>오늘 받은 메시지가 없어요</Text>
+                </View>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -57,7 +121,7 @@ export const ReceiveScreen: React.FC<ReceiveScreenProps> = ({ onBack, onSettings
 
             {/* 헤더 */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={onBack} style={styles.backButton}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Feather name="arrow-left" size={24} color={COLORS.textPrimary} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>받은 메시지</Text>
@@ -68,9 +132,9 @@ export const ReceiveScreen: React.FC<ReceiveScreenProps> = ({ onBack, onSettings
 
                     {/* 메시지 표시 카드 */}
                     <View style={styles.messageCard}>
-                        <Text style={styles.messageText}>{message}</Text>
+                        <Text style={styles.messageText}>{message.content}</Text>
                         <View style={styles.dateContainer}>
-                            <Text style={styles.dateText}>2024.12.16 오후 2:30</Text>
+                            <Text style={styles.dateText}>{formatDate(message.sentAt)}</Text>
                         </View>
                     </View>
 
@@ -124,6 +188,18 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FDFCF8',
+    },
+    centerContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    emptyText: {
+        fontSize: FONT_SIZES.md,
+        fontFamily: FONTS.regular,
+        color: COLORS.textSecondary,
+        marginTop: SPACING.md,
+        textAlign: 'center',
     },
     header: {
         flexDirection: 'row',
