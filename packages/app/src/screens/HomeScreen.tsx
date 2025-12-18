@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -436,40 +436,85 @@ const ActiveStateContent: React.FC<ActiveStateContentProps> = ({
     hasNewMessage,
     onViewMessage,
     isReceiver = false
-}) => (
-    <View style={styles.stateContainer}>
-        <View style={styles.centerContent}>
-            <View style={styles.statusBadge}>
-                <Text style={styles.statusBadgeText}>메시지 모드 진행 중</Text>
+}) => {
+    // 애니메이션 값
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+    const sparkleAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        if (hasNewMessage) {
+            // 부드러운 펄스 애니메이션
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulseAnim, {
+                        toValue: 1.03,
+                        duration: 1000,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(pulseAnim, {
+                        toValue: 1,
+                        duration: 1000,
+                        useNativeDriver: true,
+                    }),
+                ])
+            ).start();
+
+            // 반짝이 애니메이션
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(sparkleAnim, {
+                        toValue: 1,
+                        duration: 1200,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(sparkleAnim, {
+                        toValue: 0,
+                        duration: 1200,
+                        useNativeDriver: true,
+                    }),
+                ])
+            ).start();
+        }
+    }, [hasNewMessage, pulseAnim, sparkleAnim]);
+
+    return (
+        <View style={styles.stateContainer}>
+            <View style={styles.centerContent}>
+                <View style={styles.statusBadge}>
+                    <Text style={styles.statusBadgeText}>메시지 모드 진행 중</Text>
+                </View>
+                <Text style={styles.dDay}>D-{daysRemaining}</Text>
+
+                {/* 새 메시지 알림 with 애니메이션 */}
+                {hasNewMessage && (
+                    <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+                        <TouchableOpacity style={styles.newMessageBadge} onPress={onViewMessage}>
+                            <Animated.Text style={[styles.newMessageSparkle, { opacity: sparkleAnim }]}>📩</Animated.Text>
+                            <Text style={styles.newMessageText}>오늘의 메시지가 도착했어요</Text>
+                        </TouchableOpacity>
+                    </Animated.View>
+                )}
+
+                {/* 발신자에게만 전송 상태 표시 */}
+                {!isReceiver && (
+                    <Text style={styles.sendStatus}>
+                        {canSendToday ? '오늘 메시지 전송 가능' : '오늘 메시지를 이미 보냈어요'}
+                    </Text>
+                )}
             </View>
-            <Text style={styles.dDay}>D-{daysRemaining}</Text>
-
-            {/* 새 메시지 알림 */}
-            {hasNewMessage && (
-                <TouchableOpacity style={styles.newMessageBadge} onPress={onViewMessage}>
-                    <Text style={styles.newMessageText}>📩 오늘의 메시지가 도착했어요</Text>
-                </TouchableOpacity>
-            )}
-
-            {/* 발신자에게만 전송 상태 표시 */}
+            {/* 발신자에게만 보내기 버튼 표시 */}
             {!isReceiver && (
-                <Text style={styles.sendStatus}>
-                    {canSendToday ? '오늘 메시지 전송 가능' : '오늘 메시지를 이미 보냈어요'}
-                </Text>
+                <View style={styles.buttonContainer}>
+                    <PrimaryButton
+                        title="오늘의 메시지 보내기"
+                        onPress={onSendMessage}
+                        disabled={!canSendToday}
+                    />
+                </View>
             )}
         </View>
-        {/* 발신자에게만 보내기 버튼 표시 */}
-        {!isReceiver && (
-            <View style={styles.buttonContainer}>
-                <PrimaryButton
-                    title="오늘의 메시지 보내기"
-                    onPress={onSendMessage}
-                    disabled={!canSendToday}
-                />
-            </View>
-        )}
-    </View>
-);
+    );
+};
 
 const ExpiredStateContent: React.FC<{ onRequest: () => void }> = ({ onRequest }) => (
     <View style={styles.stateContainer}>
@@ -535,11 +580,17 @@ const styles = StyleSheet.create({
         paddingVertical: SPACING.sm,
         borderRadius: 12,
         marginVertical: SPACING.md,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     newMessageText: {
         fontSize: FONT_SIZES.sm,
         color: COLORS.success,
         fontWeight: '500',
+    },
+    newMessageSparkle: {
+        fontSize: 14,
+        marginHorizontal: 4,
     },
     errorText: { color: COLORS.danger, textAlign: 'center' },
     secondaryButton: {
