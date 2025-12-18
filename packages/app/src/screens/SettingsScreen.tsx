@@ -137,6 +137,32 @@ export const SettingsScreen: React.FC = () => {
                             />
                         </View>
                     </View>
+
+                    <View style={styles.divider} />
+
+                    {/* 메시지 모드 신청 섹션 */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>메시지 모드</Text>
+                        <Text style={styles.description}>
+                            상대방에게 메시지를 보내고 싶다면 신청해 보세요.
+                        </Text>
+                        <TouchableOpacity
+                            style={styles.actionCard}
+                            onPress={() => navigation.navigate('Request')}
+                            activeOpacity={0.8}
+                        >
+                            <View style={styles.optionContent}>
+                                <Feather
+                                    name="send"
+                                    size={24}
+                                    color={COLORS.accent}
+                                    style={styles.optionIcon}
+                                />
+                                <Text style={styles.actionLabel}>메시지 모드 신청하기</Text>
+                            </View>
+                            <Feather name="chevron-right" size={20} color={COLORS.textTertiary} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </ScrollView>
 
@@ -208,7 +234,7 @@ const styles = StyleSheet.create({
         paddingBottom: SPACING.xxl,
     },
     section: {
-        marginBottom: SPACING.xl,
+        marginBottom: SPACING.md,
     },
     sectionTitle: {
         fontSize: FONT_SIZES.lg,
@@ -220,7 +246,7 @@ const styles = StyleSheet.create({
         fontSize: FONT_SIZES.sm,
         fontFamily: FONTS.regular,
         color: COLORS.textSecondary,
-        marginBottom: SPACING.lg,
+        marginBottom: SPACING.md,
     },
     optionsContainer: {
         gap: SPACING.md,
@@ -283,6 +309,21 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.xs, // sm -> xs로 축소
     },
     myInfoLabel: {
+        fontSize: FONT_SIZES.md,
+        fontFamily: FONTS.medium,
+        color: COLORS.textPrimary,
+    },
+    actionCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'rgba(255,255,255,0.6)',
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        borderRadius: 16,
+        padding: SPACING.md,
+    },
+    actionLabel: {
         fontSize: FONT_SIZES.md,
         fontFamily: FONTS.medium,
         color: COLORS.textPrimary,
