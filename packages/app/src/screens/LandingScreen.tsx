@@ -1,98 +1,69 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Image, Dimensions, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import * as AuthSession from 'expo-auth-session';
-import axios from 'axios';
 
 import { BubbleBackground } from '../components/BubbleBackground';
 import { COLORS, FONTS, SPACING } from '../constants/theme';
-import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-
-WebBrowser.maybeCompleteAuthSession();
 
 const { width } = Dimensions.get('window');
 
-// Kakao Auth Endpoints
-const discovery = {
-    authorizationEndpoint: 'https://kauth.kakao.com/oauth/authorize',
-    tokenEndpoint: 'https://kauth.kakao.com/oauth/token',
-};
+// 환경변수에서 값 가져오기 (REST API 키 사용)
+const KAKAO_CLIENT_ID = process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY;
+const SERVER_REDIRECT_URI = process.env.EXPO_PUBLIC_SERVER_REDIRECT_URI || 'http://localhost:3000/auth/kakao';
+
+console.log('[LandingScreen] KAKAO_CLIENT_ID:', KAKAO_CLIENT_ID ? 'SET' : 'NOT SET');
+console.log('[LandingScreen] SERVER_REDIRECT_URI:', SERVER_REDIRECT_URI);
 
 export const LandingScreen: React.FC = () => {
     const { login } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
 
-    const redirectUri = AuthSession.makeRedirectUri({
-        // For usage in bare and standalone
-        native: 'harooapp://auth',
-        // For development workflow
-        useProxy: true,
-    });
+    const handleKakaoLogin = async () => {
+        console.log('[LandingScreen] handleKakaoLogin called');
+        console.log('[LandingScreen] KAKAO_CLIENT_ID:', KAKAO_CLIENT_ID);
 
-    
+        if (!KAKAO_CLIENT_ID) {
+            Alert.alert('오류', 'Kakao Client ID가 설정되지 않았습니다.');
+            return;
+        }
 
-    const [request, response, promptAsync] = AuthSession.useAuthRequest(
-        {
-            clientId: process.env.EXPO_PUBLIC_KAKAO_JAVASCRIPT_KEY || '',
-            scopes: [],
-            redirectUri,
-        },
-        discovery
-    );
+        setIsLoading(true);
+        try {
+            // 카카오 OAuth 인증 URL 생성
+            const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_CLIENT_ID}&redirect_uri=${encodeURIComponent(SERVER_REDIRECT_URI)}&response_type=code`;
 
-    useEffect(() => {
-        const handleAuthResponse = async () => {
-            if (response?.type === 'success') {
-                setIsLoading(true);
-                try {
-                    const { code } = response.params;
-                    // 1. Exchange code for access token
-                    const tokenResponse = await axios.post(
-                        discovery.tokenEndpoint,
-                        null,
-                        {
-                            params: {
-                                grant_type: 'authorization_code',
-                                client_id: process.env.EXPO_PUBLIC_KAKAO_JAVASCRIPT_KEY,
-                                redirect_uri: redirectUri,
-                                code: code,
-                                code_verifier: request.codeVerifier, // ADDED THIS LINE
-                            },
-                        }
-                    );
+            console.log('[LandingScreen] Opening URL:', kakaoAuthUrl);
 
-                    const { access_token } = tokenResponse.data;
+            // openAuthSessionAsync 사용 - OAuth 플로우에 최적화됨
+            const result = await WebBrowser.openAuthSessionAsync(
+                kakaoAuthUrl,
+                SERVER_REDIRECT_URI  // 서버 redirect URI를 returnUrl로 사용
+            );
 
-                    // 2. Send access token to our backend
-                    const backendResponse = await api.post('/auth/kakao', {
-                        token: access_token,
-                    });
+            console.log('[LandingScreen] WebBrowser result:', JSON.stringify(result));
 
-                    const { accessToken, refreshToken, user } = backendResponse.data;
-                    
-                    // 3. Login to the app
-                    await login(accessToken, refreshToken, user);
+            // 결과 처리
+            if (result.type === 'success' && result.url) {
+                // URL에서 토큰 추출 시도
+                const url = result.url;
+                console.log('[LandingScreen] Success URL:', url);
 
-                } catch (error: any) {
-                    console.error('Authentication failed:', error.response?.data || error.message);
-                    Alert.alert('로그인 실패', '로그인 중 문제가 발생했습니다. 다시 시도해주세요.');
-                } finally {
-                    setIsLoading(false);
+                // haroo://login?token=xxx 또는 exp://xxx/--/login?token=xxx 형식
+                const tokenMatch = url.match(/[?&]token=([^&]+)/);
+                if (tokenMatch) {
+                    const token = decodeURIComponent(tokenMatch[1]);
+                    console.log('[LandingScreen] Token extracted, logging in...');
+                    await login(token);
                 }
-            } else if (response?.type === 'error') {
-                Alert.alert('로그인 실패', response.params.error_description || '알 수 없는 오류가 발생했습니다.');
+            } else if (result.type === 'cancel' || result.type === 'dismiss') {
+                console.log('[LandingScreen] Auth cancelled or dismissed');
             }
-        };
-
-        handleAuthResponse();
-    }, [response]);
-
-    const handleKakaoLogin = () => {
-        if (request) {
-            promptAsync();
-        } else {
-            Alert.alert('오류', '로그인 요청을 생성할 수 없습니다. 앱 설정을 확인해주세요.');
+        } catch (error) {
+            console.error('[LandingScreen] Kakao login error:', error);
+            Alert.alert('로그인 실패', '로그인 중 문제가 발생했습니다. 다시 시도해주세요.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -116,7 +87,6 @@ export const LandingScreen: React.FC = () => {
                         <TouchableOpacity
                             style={[styles.loginButton, { backgroundColor: '#FEE500' }]}
                             onPress={handleKakaoLogin}
-                            disabled={!request}
                         >
                             <Text style={styles.loginButtonText}>카카오로 시작하기</Text>
                         </TouchableOpacity>
