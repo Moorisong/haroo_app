@@ -127,7 +127,7 @@ export const getTodayMessage = async (req: Request, res: Response, next: NextFun
             status: 'ACTIVE',
             expiresAt: { $gt: now }, // 아직 만료되지 않음
         })
-            .populate('sender', 'hashId') // sender의 hashId 포함
+            .populate('sender', 'hashId nickname') // sender의 hashId와 nickname 포함
             .sort({ sentAt: -1 }); // 가장 최근 메시지
 
         res.json({ message });

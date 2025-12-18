@@ -3,6 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IUser extends Document {
     hashId: string; // 고유 해시값 ID (사용자에게 보여지는 ID)
     kakaoId: string; // 카카오 고유 ID (인증용)
+    nickname?: string; // 카카오 닉네임
     status: 'ACTIVE' | 'INACTIVE' | 'BANNED';
     settings: {
         displayMode: 'WIDGET' | 'NOTIFICATION';
@@ -27,6 +28,10 @@ const UserSchema: Schema = new Schema({
         required: true,
         unique: true,
         index: true
+    },
+    nickname: {
+        type: String,
+        required: false,
     },
     status: {
         type: String,

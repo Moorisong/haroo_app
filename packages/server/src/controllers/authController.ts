@@ -167,6 +167,7 @@ export const kakaoCallback = async (req: Request, res: Response, next: NextFunct
         // 2. 카카오 사용자 정보 조회
         const kakaoUser = await getKakaoUserInfo(kakaoAccessToken);
         const kakaoId = kakaoUser.id.toString();
+        const kakaoNickname = kakaoUser.properties?.nickname || null;
 
         // 3. DB에서 사용자 찾기 또는 생성
         let user = await User.findOne({ kakaoId });
@@ -183,8 +184,15 @@ export const kakaoCallback = async (req: Request, res: Response, next: NextFunct
             user = await User.create({
                 kakaoId,
                 hashId,
+                nickname: kakaoNickname,
                 status: 'ACTIVE',
             });
+        } else {
+            // 기존 사용자: 닉네임 업데이트 (카카오에서 변경되었을 수 있음)
+            if (kakaoNickname && user.nickname !== kakaoNickname) {
+                user.nickname = kakaoNickname;
+                await user.save();
+            }
         }
 
         if (user.status === 'BANNED') {
