@@ -30,7 +30,23 @@
     },
     "plugins": [
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "HarooWidget",
+              "label": "하루",
+              "minWidth": "320dp",
+              "minHeight": "120dp",
+              "description": "오늘 받은 메시지를 확인하세요",
+              "updatePeriodMillis": 1800000,
+              "resizeMode": "horizontal|vertical"
+            }
+          ]
+        }
+      ]
     ]
   }
 }
