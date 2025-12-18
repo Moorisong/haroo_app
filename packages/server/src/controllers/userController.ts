@@ -101,3 +101,30 @@ export const blockUser = async (req: Request, res: Response, next: NextFunction)
         next(error);
     }
 };
+
+// @desc    Register FCM token for push notifications
+// @route   POST /users/fcm-token
+// @access  Private
+export const registerFcmToken = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { fcmToken } = req.body;
+
+        if (!fcmToken) {
+            res.status(400);
+            throw new Error('fcmToken is required');
+        }
+
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            res.status(404);
+            throw new Error('User not found');
+        }
+
+        user.fcmToken = fcmToken;
+        await user.save();
+
+        res.json({ message: 'FCM token registered successfully' });
+    } catch (error) {
+        next(error);
+    }
+};
