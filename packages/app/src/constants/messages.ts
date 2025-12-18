@@ -83,6 +83,9 @@ export const MESSAGES = {
             ACCEPT: '수락하기',
             REJECT: '거절하기',
             BLOCK: '이 발신자 차단하기',
+        },
+        TOAST: {
+            ACCEPT_COMPLETE: '메시지 수신을 허락했어요.',
         }
     }
 } as const;
