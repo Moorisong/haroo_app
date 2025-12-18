@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     TouchableOpacity,
     Alert,
-    ScrollView,
     Platform,
     ActivityIndicator,
+    Animated,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -22,7 +22,46 @@ export const ReceiveScreen: React.FC = () => {
     const [message, setMessage] = useState<ReceivedMessage | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isBlocked, setIsBlocked] = useState(false);
-    const [displayMode, setDisplayMode] = useState<'WIDGET' | 'NOTIFICATION'>('NOTIFICATION');
+
+    // 애니메이션 값
+    const floatAnim = useRef(new Animated.Value(0)).current;
+    const sparkle1 = useRef(new Animated.Value(0)).current;
+    const sparkle2 = useRef(new Animated.Value(0)).current;
+    const sparkle3 = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        // 부드러운 부유 애니메이션
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(floatAnim, {
+                    toValue: 1,
+                    duration: 2000,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(floatAnim, {
+                    toValue: 0,
+                    duration: 2000,
+                    useNativeDriver: true,
+                }),
+            ])
+        ).start();
+
+        // 반짝이 애니메이션들 (각각 다른 타이밍)
+        const createSparkle = (anim: Animated.Value, delay: number) => {
+            setTimeout(() => {
+                Animated.loop(
+                    Animated.sequence([
+                        Animated.timing(anim, { toValue: 1, duration: 1500, useNativeDriver: true }),
+                        Animated.timing(anim, { toValue: 0, duration: 1500, useNativeDriver: true }),
+                    ])
+                ).start();
+            }, delay);
+        };
+
+        createSparkle(sparkle1, 0);
+        createSparkle(sparkle2, 500);
+        createSparkle(sparkle3, 1000);
+    }, [floatAnim, sparkle1, sparkle2, sparkle3]);
 
     const fetchData = useCallback(async () => {
         try {
@@ -33,16 +72,13 @@ export const ReceiveScreen: React.FC = () => {
             ]);
 
             setMessage(messageResponse.message);
-            setDisplayMode(profileResponse.settings?.displayMode || 'NOTIFICATION');
 
-            // 메시지가 있고 아직 읽지 않은 경우 읽음 처리
             if (messageResponse.message) {
                 const messageSenderValues = messageResponse.message.sender;
                 const senderHashId = typeof messageSenderValues === 'string'
                     ? messageSenderValues
                     : messageSenderValues.hashId;
 
-                // 차단 여부 확인
                 if (profileResponse.blockedUsers?.includes(senderHashId)) {
                     setIsBlocked(true);
                 }
@@ -50,11 +86,9 @@ export const ReceiveScreen: React.FC = () => {
                 if (!messageResponse.message.isRead) {
                     try {
                         await markMessageAsRead(messageResponse.message._id);
-                        // 로컬 상태도 업데이트
                         setMessage(prev => prev ? { ...prev, isRead: true } : null);
                     } catch (readError) {
                         console.error('Failed to mark message as read:', readError);
-                        // 읽음 처리 실패해도 메시지는 정상 표시
                     }
                 }
             }
@@ -65,7 +99,6 @@ export const ReceiveScreen: React.FC = () => {
         }
     }, []);
 
-    // 화면 진입 시 데이터 조회 (화면이 focus될 때마다)
     useFocusEffect(
         useCallback(() => {
             fetchData();
@@ -74,14 +107,13 @@ export const ReceiveScreen: React.FC = () => {
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
         const hours = date.getHours();
         const minutes = String(date.getMinutes()).padStart(2, '0');
         const period = hours >= 12 ? '오후' : '오전';
         const displayHours = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours;
-        return `${year}.${month}.${day} ${period} ${displayHours}:${minutes}`;
+        return `${month}월 ${day}일 ${period} ${displayHours}:${minutes}`;
     };
 
     const handleBlock = () => {
@@ -93,12 +125,8 @@ export const ReceiveScreen: React.FC = () => {
             const confirmed = window.confirm('이 사용자를 차단하시겠습니까?\n더 이상 메시지를 받을 수 없게 됩니다.');
             if (confirmed) {
                 blockUser(senderHashId)
-                    .then(() => {
-                        setIsBlocked(true);
-                    })
-                    .catch(() => {
-                        alert('차단에 실패했습니다.');
-                    });
+                    .then(() => setIsBlocked(true))
+                    .catch(() => alert('차단에 실패했습니다.'));
             }
         } else {
             Alert.alert(
@@ -124,10 +152,6 @@ export const ReceiveScreen: React.FC = () => {
         }
     };
 
-    const handleSettings = () => {
-        navigation.navigate('Settings');
-    };
-
     // 로딩 중
     if (isLoading) {
         return (
@@ -143,22 +167,26 @@ export const ReceiveScreen: React.FC = () => {
         return (
             <View style={styles.container}>
                 <BubbleBackground />
-
-                {/* 헤더 */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                         <Feather name="arrow-left" size={24} color={COLORS.textPrimary} />
                     </TouchableOpacity>
-                    <Text style={styles.headerTitle}>받은 메시지</Text>
                 </View>
-
-                <View style={[styles.content, styles.centerContent]}>
-                    <Feather name="inbox" size={48} color={COLORS.textTertiary} />
-                    <Text style={styles.emptyText}>오늘 받은 메시지가 없어요</Text>
+                <View style={styles.emptyContainer}>
+                    <View style={styles.emptyIconWrapper}>
+                        <Feather name="inbox" size={32} color={COLORS.textTertiary} />
+                    </View>
+                    <Text style={styles.emptyTitle}>받은 메시지가 없어요</Text>
+                    <Text style={styles.emptySubtitle}>오늘 도착한 메시지가 여기에 표시됩니다</Text>
                 </View>
             </View>
         );
     }
+
+    const floatTranslate = floatAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0, -8],
+    });
 
     return (
         <View style={styles.container}>
@@ -169,66 +197,55 @@ export const ReceiveScreen: React.FC = () => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                     <Feather name="arrow-left" size={24} color={COLORS.textPrimary} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>받은 메시지</Text>
             </View>
 
-            <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.content}>
+            {/* 메인 컨텐츠 */}
+            <View style={styles.mainContent}>
+                {/* 메시지 영역 with 애니메이션 */}
+                <Animated.View style={[
+                    styles.messageSection,
+                    { transform: [{ translateY: floatTranslate }] }
+                ]}>
+                    {/* 반짝이 효과 */}
+                    <Animated.View style={[styles.sparkle, styles.sparkle1, { opacity: sparkle1 }]}>
+                        <Text style={[styles.sparkleIcon, { color: '#FFB74D' }]}>✦</Text>
+                    </Animated.View>
+                    <Animated.View style={[styles.sparkle, styles.sparkle2, { opacity: sparkle2 }]}>
+                        <Text style={[styles.sparkleIcon, { color: '#F48FB1' }]}>✦</Text>
+                    </Animated.View>
+                    <Animated.View style={[styles.sparkle, styles.sparkle3, { opacity: sparkle3 }]}>
+                        <Text style={[styles.sparkleIcon, { color: '#81D4FA' }]}>✦</Text>
+                    </Animated.View>
 
-                    {/* 메시지 표시 카드 - 이중 박스 구조 */}
-                    <View style={styles.messageCardOuter}>
-                        <View style={styles.messageCardInner}>
-                            <Text style={styles.messageText}>{message.content}</Text>
-                            <View style={styles.dateContainer}>
-                                <Text style={styles.dateText}>{formatDate(message.sentAt)}</Text>
-                            </View>
-                        </View>
-                    </View>
+                    <Text style={styles.messageText}>{message.content}</Text>
+                </Animated.View>
 
-                    {/* 고정 안내 문구 */}
-                    <View style={styles.noticeContainer}>
-                        <Text style={styles.noticeText}>
-                            이 메시지는 읽기만 가능합니다.{'\n'}
-                            <Text style={styles.noticeBold}>답장은 요구하지 않아요.</Text>
+                {/* 메타 정보 */}
+                <View style={styles.metaSection}>
+                    <Text style={styles.dateText}>{formatDate(message.sentAt)}</Text>
+                    <View style={styles.infoBadge}>
+                        <Text style={styles.infoText}>
+                            {typeof message.sender === 'object' && message.sender.nickname
+                                ? `${message.sender.nickname}님께서 보내셨습니다`
+                                : '누군가로부터 온 메시지'}
                         </Text>
                     </View>
-
-                    {/* 메시지 표시 방식 안내 */}
-                    <TouchableOpacity
-                        style={styles.settingLink}
-                        onPress={handleSettings}
-                        activeOpacity={0.7}
-                    >
-                        <Text style={styles.settingText}>
-                            현재 표시 방식:{'\n'}
-                            <Text style={styles.settingBold}>
-                                {displayMode === 'WIDGET' ? '홈 화면 위젯' : '알림바 고정'}
-                            </Text>
-                        </Text>
-                        <Feather name="chevron-right" size={20} color={COLORS.textTertiary} />
-                    </TouchableOpacity>
-
-                    {/* 차단 버튼 영역 */}
-                    <View style={styles.blockSection}>
-                        {!isBlocked ? (
-                            <TouchableOpacity
-                                style={styles.blockButton}
-                                onPress={handleBlock}
-                            >
-                                <Text style={styles.blockButtonText}>이 발신자 차단하기</Text>
-                            </TouchableOpacity>
-                        ) : (
-                            <View style={styles.blockedContainer}>
-                                <Feather name="slash" size={20} color={COLORS.textSecondary} style={{ marginBottom: 8 }} />
-                                <Text style={styles.blockedText}>
-                                    {MESSAGES.RECEIVE.BLOCKED_USER.TITLE}
-                                </Text>
-                            </View>
-                        )}
-                    </View>
-
                 </View>
-            </ScrollView>
+
+                {/* 차단 버튼 - 메인 컨텐츠 아래에 위치 */}
+                <View style={styles.blockSection}>
+                    {!isBlocked ? (
+                        <TouchableOpacity style={styles.blockLink} onPress={handleBlock}>
+                            <Text style={styles.blockLinkText}>이 발신자 차단하기</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <View style={styles.blockedBadge}>
+                            <Feather name="slash" size={14} color={COLORS.textTertiary} />
+                            <Text style={styles.blockedText}>{MESSAGES.RECEIVE.BLOCKED_USER.TITLE}</Text>
+                        </View>
+                    )}
+                </View>
+            </View>
         </View>
     );
 };
@@ -239,129 +256,143 @@ const styles = StyleSheet.create({
         backgroundColor: '#FDFCF8',
     },
     centerContent: {
-        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    emptyText: {
-        fontSize: FONT_SIZES.md,
-        fontFamily: FONTS.regular,
-        color: COLORS.textSecondary,
-        marginTop: SPACING.md,
-        textAlign: 'center',
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: SPACING.lg,
-        paddingTop: Platform.OS === 'ios' ? 70 : 50,
-        paddingBottom: SPACING.md,
+        paddingTop: Platform.OS === 'ios' ? 60 : 48,
+        paddingBottom: SPACING.sm,
     },
     backButton: {
-        padding: 4,
-        marginRight: SPACING.sm,
+        padding: 8,
+        marginLeft: -8,
     },
-    headerTitle: {
+
+    // Empty State
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: SPACING.xl,
+    },
+    emptyIconWrapper: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
+        backgroundColor: 'rgba(0,0,0,0.03)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: SPACING.lg,
+    },
+    emptyTitle: {
         fontSize: FONT_SIZES.lg,
         fontFamily: FONTS.bold,
         color: COLORS.textPrimary,
+        marginBottom: SPACING.xs,
     },
-    scrollContent: {
-        flexGrow: 1,
-    },
-    content: {
-        padding: SPACING.lg,
-        paddingBottom: SPACING.xxl,
-    },
-    messageCardOuter: {
-        borderRadius: 24,
-        borderWidth: 1.5,
-        borderColor: COLORS.accentLight,
-        padding: 6,
-        marginBottom: SPACING.xl,
-    },
-    messageCardInner: {
-        backgroundColor: 'rgba(255, 255, 255, 0.6)',
-        borderRadius: 18,
-        padding: SPACING.xl,
-    },
-    messageText: {
-        fontSize: FONT_SIZES.lg, // 16px
-        fontFamily: FONTS.medium, // 고딕체
-        color: COLORS.textPrimary,
-        lineHeight: 24, // 행간 축소
-        marginBottom: SPACING.sm, // 간격 축소
-    },
-    dateContainer: {
-        alignItems: 'flex-end',
-        marginTop: SPACING.md,
-    },
-    dateText: {
-        fontSize: FONT_SIZES.xs,
+    emptySubtitle: {
+        fontSize: FONT_SIZES.sm,
         fontFamily: FONTS.regular,
         color: COLORS.textTertiary,
     },
-    noticeContainer: {
-        alignItems: 'center',
+
+    // Main Content
+    mainContent: {
+        flex: 1,
+        justifyContent: 'center',
+        paddingHorizontal: SPACING.xl,
+    },
+    messageSection: {
         marginBottom: SPACING.xl,
+        position: 'relative',
     },
-    noticeText: {
-        fontSize: FONT_SIZES.md,
-        fontFamily: FONTS.regular,
-        color: COLORS.textSecondary,
-        textAlign: 'center',
-        lineHeight: 22,
-    },
-    noticeBold: {
-        fontFamily: FONTS.bold,
+    messageText: {
+        fontSize: 24,
+        fontFamily: FONTS.serif,
+        fontWeight: '600',
         color: COLORS.textPrimary,
+        lineHeight: 36,
+        textAlign: 'center',
     },
-    settingLink: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+
+    // 반짝이 효과
+    sparkle: {
+        position: 'absolute',
+    },
+    sparkle1: {
+        top: -20,
+        left: 20,
+    },
+    sparkle2: {
+        top: -10,
+        right: 30,
+    },
+    sparkle3: {
+        bottom: -15,
+        right: 50,
+    },
+    sparkleIcon: {
+        fontSize: 16,
+        color: COLORS.accentLight,
+    },
+
+    // Meta Info
+    metaSection: {
         alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.5)',
-        padding: SPACING.md,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: COLORS.border,
+        gap: SPACING.xs,
         marginBottom: SPACING.xxl,
     },
-    settingText: {
+    dateText: {
         fontSize: FONT_SIZES.sm,
         fontFamily: FONTS.regular,
-        color: COLORS.textSecondary,
-        lineHeight: 20,
+        color: COLORS.textTertiary,
     },
-    settingBold: {
-        fontFamily: FONTS.bold,
-        color: COLORS.textPrimary,
+    infoBadge: {
+        backgroundColor: 'rgba(160, 128, 96, 0.08)',
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.sm,
+        borderRadius: 16,
+        marginTop: SPACING.sm,
     },
+    infoText: {
+        fontSize: FONT_SIZES.sm,
+        fontFamily: FONTS.medium,
+        color: COLORS.accent,
+    },
+
+    // Block Section (컨텐츠 아래)
     blockSection: {
         alignItems: 'center',
-        marginTop: SPACING.md,
+        marginTop: SPACING.xxl,
     },
-    blockButton: {
-        width: '100%',
-        padding: SPACING.md,
-        alignItems: 'center',
-        backgroundColor: COLORS.dangerLight,
-        borderRadius: 16,
+    blockLink: {
+        paddingHorizontal: SPACING.lg,
+        paddingVertical: SPACING.sm,
+        borderWidth: 1,
+        borderColor: 'rgba(244, 67, 54, 0.3)',
+        borderRadius: 20,
+        backgroundColor: 'rgba(244, 67, 54, 0.05)',
     },
-    blockButtonText: {
-        fontSize: FONT_SIZES.md,
+    blockLinkText: {
+        fontSize: FONT_SIZES.sm,
         fontFamily: FONTS.medium,
-        color: COLORS.danger,
+        color: '#E57373',
     },
-    blockedContainer: {
+    blockedBadge: {
+        flexDirection: 'row',
         alignItems: 'center',
-        padding: SPACING.lg,
+        gap: SPACING.xs,
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.sm,
+        backgroundColor: 'rgba(0,0,0,0.03)',
+        borderRadius: 20,
     },
     blockedText: {
-        fontSize: FONT_SIZES.md,
+        fontSize: FONT_SIZES.xs,
         fontFamily: FONTS.regular,
-        color: COLORS.textSecondary,
-        textAlign: 'center',
-        lineHeight: 22,
+        color: COLORS.textTertiary,
     },
 });
