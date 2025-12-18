@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "app",
-    "slug": "app",
+    "name": "하루",
+    "slug": "haroo",
     "scheme": "haroo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
