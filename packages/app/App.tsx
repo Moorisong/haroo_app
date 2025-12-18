@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -16,6 +16,7 @@ import {
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { HomeScreen, LandingScreen, RequestScreen, SendScreen, ReceiveScreen, SettingsScreen } from './src/screens';
+import { registerForPushNotificationsAsync, setupNotificationListeners } from './src/services/notifications';
 
 const Stack = createStackNavigator();
 
@@ -41,6 +42,15 @@ const AuthStack = () => {
 
 const RootNavigator = () => {
   const { accessToken, isLoading } = useAuth();
+
+  // 로그인 후 푸시 알림 등록
+  useEffect(() => {
+    if (accessToken) {
+      registerForPushNotificationsAsync();
+      const cleanup = setupNotificationListeners();
+      return cleanup;
+    }
+  }, [accessToken]);
 
   if (isLoading) {
     return (
