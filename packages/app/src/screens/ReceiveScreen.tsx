@@ -304,6 +304,7 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         paddingHorizontal: SPACING.xl,
+        marginTop: -60,
     },
     messageSection: {
         marginBottom: SPACING.xl,
@@ -394,5 +395,7 @@ const styles = StyleSheet.create({
         fontSize: FONT_SIZES.xs,
         fontFamily: FONTS.regular,
         color: COLORS.textTertiary,
+        lineHeight: 18,
+        textAlign: 'center',
     },
 });
