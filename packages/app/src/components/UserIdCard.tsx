@@ -28,7 +28,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: SPACING.xs,
         paddingVertical: SPACING.xs,
-        paddingHorizontal: SPACING.sm,
+        paddingLeft: SPACING.md,
+        paddingRight: SPACING.sm,
         backgroundColor: 'rgba(255, 255, 255, 0.5)', // 반투명 배경
         borderRadius: 12,
     },
