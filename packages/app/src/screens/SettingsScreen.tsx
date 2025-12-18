@@ -17,11 +17,13 @@ import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
 import { BubbleBackground } from '../components/BubbleBackground';
 import { UserIdCard } from '../components/UserIdCard';
 import { getUserProfile, updateUserSettings, getBlockedUsers, unblockUser, BlockedUser } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 type DisplayMode = 'WIDGET' | 'NOTIFICATION';
 
 export const SettingsScreen: React.FC = () => {
     const navigation = useNavigation<any>();
+    const { logout } = useAuth();
 
     const [displayMode, setDisplayMode] = useState<DisplayMode>('NOTIFICATION');
     const [userId, setUserId] = useState('');
@@ -241,6 +243,16 @@ export const SettingsScreen: React.FC = () => {
                             </View>
                         </>
                     )}
+
+                    {/* 로그아웃 버튼 - 맨 아래 눈에 안띄게 */}
+                    <View style={styles.logoutSection}>
+                        <TouchableOpacity
+                            style={styles.logoutButton}
+                            onPress={logout}
+                        >
+                            <Text style={styles.logoutText}>로그아웃</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </ScrollView>
 
@@ -468,5 +480,22 @@ const styles = StyleSheet.create({
         fontSize: FONT_SIZES.sm,
         fontFamily: FONTS.medium,
         color: COLORS.textSecondary,
+    },
+    // 로그아웃 스타일
+    logoutSection: {
+        marginTop: SPACING.xxl,
+        paddingTop: SPACING.lg,
+        borderTopWidth: 1,
+        borderTopColor: COLORS.divider,
+        alignItems: 'center',
+    },
+    logoutButton: {
+        paddingVertical: SPACING.sm,
+        paddingHorizontal: SPACING.lg,
+    },
+    logoutText: {
+        fontSize: FONT_SIZES.sm,
+        fontFamily: FONTS.regular,
+        color: COLORS.textTertiary,
     },
 });
