@@ -1,11 +1,11 @@
 import express from 'express';
-import { kakaoLogin, refreshToken } from '../controllers/authController';
+import { kakaoLogin, kakaoCallback } from '../controllers/authController';
 
 const router = express.Router();
 
-// POST /auth/kakao
+// POST /auth/kakao (기존 방식 - Redirect 안정화 후 제거 예정)
 router.post('/kakao', kakaoLogin);
-// POST /auth/refresh
-router.post('/refresh', refreshToken);
+// GET /auth/kakao (Server Redirect 방식)
+router.get('/kakao', kakaoCallback);
 
 export default router;

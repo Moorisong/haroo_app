@@ -102,6 +102,133 @@ export const kakaoLogin = async (req: Request, res: Response, next: NextFunction
     }
 };
 
+// @desc    Kakao OAuth Callback (Server Redirect 방식)
+// @route   GET /auth/kakao
+// @access  Public
+export const kakaoCallback = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { code } = req.query;
+
+        if (!code || typeof code !== 'string') {
+            res.status(400);
+            throw new Error('Authorization code is required');
+        }
+
+        const kakaoClientId = process.env.KAKAO_CLIENT_ID;
+        const kakaoRedirectUri = process.env.KAKAO_REDIRECT_URI;
+        const kakaoClientSecret = process.env.KAKAO_CLIENT_SECRET; // 선택적
+
+        console.log('[kakaoCallback] code:', code);
+        console.log('[kakaoCallback] kakaoClientId:', kakaoClientId);
+        console.log('[kakaoCallback] kakaoRedirectUri:', kakaoRedirectUri);
+        console.log('[kakaoCallback] kakaoClientSecret:', kakaoClientSecret ? 'SET' : 'NOT SET');
+
+        if (!kakaoClientId || !kakaoRedirectUri) {
+            res.status(500);
+            throw new Error('Kakao OAuth configuration is missing');
+        }
+
+        // 1. Authorization code로 카카오 토큰 획득
+        let kakaoAccessToken: string;
+        try {
+            console.log('[kakaoCallback] Requesting token from Kakao...');
+
+            // 카카오 API는 form-urlencoded body로 파라미터를 받음
+            const tokenParams = new URLSearchParams();
+            tokenParams.append('grant_type', 'authorization_code');
+            tokenParams.append('client_id', kakaoClientId);
+            tokenParams.append('redirect_uri', kakaoRedirectUri);
+            tokenParams.append('code', code);
+
+            // Client Secret이 설정된 경우 추가
+            if (kakaoClientSecret) {
+                tokenParams.append('client_secret', kakaoClientSecret);
+            }
+
+            const tokenResponse = await axios.post(
+                'https://kauth.kakao.com/oauth/token',
+                tokenParams.toString(),
+                {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+                    },
+                }
+            );
+            console.log('[kakaoCallback] Token response received');
+            kakaoAccessToken = tokenResponse.data.access_token;
+        } catch (error: any) {
+            console.error('[kakaoCallback] Kakao token exchange failed!');
+            console.error('[kakaoCallback] Error response:', JSON.stringify(error.response?.data, null, 2));
+            console.error('[kakaoCallback] Error status:', error.response?.status);
+            res.status(401);
+            throw new Error('Failed to exchange authorization code');
+        }
+
+        // 2. 카카오 사용자 정보 조회
+        const kakaoUser = await getKakaoUserInfo(kakaoAccessToken);
+        const kakaoId = kakaoUser.id.toString();
+
+        // 3. DB에서 사용자 찾기 또는 생성
+        let user = await User.findOne({ kakaoId });
+
+        if (!user) {
+            // 새 사용자 생성 (Hash ID 발급)
+            let hashId = generateHashId();
+            let isDuplicate = await User.findOne({ hashId });
+            while (isDuplicate) {
+                hashId = generateHashId();
+                isDuplicate = await User.findOne({ hashId });
+            }
+
+            user = await User.create({
+                kakaoId,
+                hashId,
+                status: 'ACTIVE',
+            });
+        }
+
+        if (user.status === 'BANNED') {
+            // 차단된 계정은 에러 페이지로 리다이렉트 (추후 구현)
+            res.status(403);
+            throw new Error('This account has been banned');
+        }
+
+        // 4. JWT 발급 (30일 유효, 단일 토큰)
+        const jwtSecret = process.env.JWT_SECRET || 'fallback_secret';
+        const token = jwt.sign(
+            {
+                id: user._id,
+                hashId: user.hashId,
+                provider: 'kakao',
+                tokenType: 'access'
+            },
+            jwtSecret,
+            { expiresIn: '30d' }
+        );
+
+        // 5. 딥링크로 앱 복귀 (Zero-UI: redirect only, no HTML)
+        // Expo Go 개발 모드에서는 exp:// 스킴 사용, 프로덕션에서는 haroo:// 사용
+        const expoDevUrl = process.env.EXPO_DEV_URL; // 예: exp://192.168.219.101:8081
+        let deepLink: string;
+
+        if (expoDevUrl) {
+            // Expo Go 개발 모드
+            deepLink = `${expoDevUrl}/--/login?token=${encodeURIComponent(token)}`;
+        } else {
+            // 프로덕션 앱
+            deepLink = `haroo://login?token=${encodeURIComponent(token)}`;
+        }
+
+        console.log('[kakaoCallback] Redirecting to:', deepLink);
+
+        // Zero-UI: 오직 딥링크 redirect만 수행
+        res.redirect(deepLink);
+
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc    Refresh Access Token
 // @route   POST /auth/refresh
 // @access  Public (with Refresh Token)
