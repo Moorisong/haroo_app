@@ -22,6 +22,7 @@ export const RequestScreen: React.FC = () => {
     const navigation = useNavigation();
 
     const [targetHashId, setTargetHashId] = useState('');
+    const [durationDays, setDurationDays] = useState<1 | 3>(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -36,7 +37,7 @@ export const RequestScreen: React.FC = () => {
         try {
             await requestMode({
                 targetHashId: targetHashId.trim(),
-                durationDays: 1, // Default to 1 day as per project description for initial request
+                durationDays,
             });
 
             setStatusMessage({ type: 'success', text: `${targetHashId.trim()}님에게 메시지 모드를 신청했습니다.` });
@@ -112,6 +113,34 @@ export const RequestScreen: React.FC = () => {
                                 onChangeText={handleIdChange}
                                 autoCapitalize="none"
                             />
+                        </View>
+
+                        {/* 기간 선택 */}
+                        <View style={styles.durationSection}>
+                            <Text style={styles.sectionLabel}>기간 선택</Text>
+                            <View style={styles.durationOptions}>
+                                {([1, 3] as const).map((days) => (
+                                    <TouchableOpacity
+                                        key={days}
+                                        style={[
+                                            styles.durationOption,
+                                            durationDays === days && styles.durationOptionSelected
+                                        ]}
+                                        onPress={() => setDurationDays(days)}
+                                    >
+                                        <Text style={[
+                                            styles.durationText,
+                                            durationDays === days && styles.durationTextSelected
+                                        ]}>
+                                            {days}일
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                            <Text style={styles.durationHint}>
+                                선택한 기간 동안 하루에 한 번 메시지를 보낼 수 있어요.{'\n'}
+                                상대방은 이 조건을 보고 수락 여부를 결정해요.
+                            </Text>
                         </View>
 
                         {/* Status Message Display */}
@@ -222,5 +251,47 @@ const styles = StyleSheet.create({
     },
     errorMessageText: {
         color: COLORS.textPrimary, // Match "상대방의 ID를 입력해주세요" color
+    },
+    durationSection: {
+        marginBottom: SPACING.lg,
+    },
+    sectionLabel: {
+        fontSize: FONT_SIZES.md,
+        fontFamily: FONTS.bold,
+        color: COLORS.textPrimary,
+        marginBottom: SPACING.sm,
+    },
+    durationOptions: {
+        flexDirection: 'row',
+        gap: SPACING.sm,
+        marginBottom: SPACING.sm,
+    },
+    durationOption: {
+        flex: 1,
+        paddingVertical: SPACING.md,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        backgroundColor: 'rgba(255,255,255,0.6)',
+        alignItems: 'center',
+    },
+    durationOptionSelected: {
+        borderColor: COLORS.accent,
+        backgroundColor: '#FFFBF5',
+    },
+    durationText: {
+        fontSize: FONT_SIZES.md,
+        fontFamily: FONTS.medium,
+        color: COLORS.textSecondary,
+    },
+    durationTextSelected: {
+        color: COLORS.accent,
+        fontFamily: FONTS.bold,
+    },
+    durationHint: {
+        fontSize: FONT_SIZES.xs,
+        fontFamily: FONTS.regular,
+        color: COLORS.textSecondary,
+        lineHeight: 18,
     },
 });

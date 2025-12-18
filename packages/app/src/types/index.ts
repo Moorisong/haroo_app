@@ -13,6 +13,7 @@ export interface Connection {
     status: ConnectionStatus;
     initiator: User | string; // Populated User object or ID string
     recipient: User | string; // Populated User object or ID string
+    durationDays?: 1 | 3; // 선택된 기간
     startDate?: Date;
     endDate?: Date;
     canSendToday?: boolean;
