@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import User from '../models/User';
 import MessageMode from '../models/MessageMode';
-import Message from '../models/Message'; // Import Message model
+import Message from '../models/Message';
+import { sendModeRequestedPush, sendModeAcceptedPush, sendModeRejectedPush } from '../services/pushService';
 
 // 유틸: 유저가 이미 활성 상태의 모드(PENDING or ACTIVE)가 있는지 확인
 const hasActiveMode = async (userId: string, excludeModeId?: string) => {
@@ -77,6 +78,9 @@ export const requestMode = async (req: Request, res: Response, next: NextFunctio
             status: 'PENDING',
         });
 
+        // 5. 수신자에게 푸시 알림 전송
+        sendModeRequestedPush(recipient._id.toString());
+
         res.status(201).json(newMode);
     } catch (error) {
         next(error);
@@ -131,6 +135,9 @@ export const acceptMode = async (req: Request, res: Response, next: NextFunction
 
         await mode.save();
 
+        // 신청자에게 푸시 알림 전송
+        sendModeAcceptedPush(mode.initiator.toString());
+
         res.json(mode);
     } catch (error) {
         next(error);
@@ -166,6 +173,9 @@ export const rejectMode = async (req: Request, res: Response, next: NextFunction
         // 상태 변경: REJECTED
         mode.status = 'REJECTED';
         await mode.save();
+
+        // 신청자에게 푸시 알림 전송
+        sendModeRejectedPush(mode.initiator.toString());
 
         res.json(mode);
     } catch (error) {

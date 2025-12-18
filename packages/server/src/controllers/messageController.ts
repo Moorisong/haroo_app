@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import Message from '../models/Message';
 import MessageMode from '../models/MessageMode';
+import { sendMessageReceivedPush } from '../services/pushService';
 
 // 24시간을 밀리초로 계산
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
@@ -81,7 +82,11 @@ export const sendMessage = async (req: Request, res: Response, next: NextFunctio
             expiresAt,
         });
 
-        // TODO: Push Notification Trigger (Future Work)
+        // 7. 수신자에게 푸시 알림 전송
+        const recipientId = mode.initiator.toString() === senderId.toString()
+            ? mode.recipient.toString()
+            : mode.initiator.toString();
+        sendMessageReceivedPush(recipientId);
 
         res.status(201).json(message);
     } catch (error) {
