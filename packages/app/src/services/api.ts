@@ -162,3 +162,28 @@ export const blockUser = async (targetHashId: string): Promise<any> => {
         throw error;
     }
 };
+
+export interface BlockedUser {
+    hashId: string;
+    nickname?: string;
+}
+
+export const getBlockedUsers = async (): Promise<{ blockedUsers: BlockedUser[] }> => {
+    try {
+        const response = await api.get<{ blockedUsers: BlockedUser[] }>('/users/blocked');
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching blocked users:', error);
+        throw error;
+    }
+};
+
+export const unblockUser = async (targetHashId: string): Promise<any> => {
+    try {
+        const response = await api.delete(`/users/block/${targetHashId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error unblocking user:', error);
+        throw error;
+    }
+};

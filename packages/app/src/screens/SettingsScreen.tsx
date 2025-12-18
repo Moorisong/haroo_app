@@ -16,7 +16,7 @@ import * as Clipboard from 'expo-clipboard';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
 import { BubbleBackground } from '../components/BubbleBackground';
 import { UserIdCard } from '../components/UserIdCard';
-import { getUserProfile, updateUserSettings } from '../services/api';
+import { getUserProfile, updateUserSettings, getBlockedUsers, unblockUser, BlockedUser } from '../services/api';
 
 type DisplayMode = 'WIDGET' | 'NOTIFICATION';
 
@@ -25,23 +25,30 @@ export const SettingsScreen: React.FC = () => {
 
     const [displayMode, setDisplayMode] = useState<DisplayMode>('NOTIFICATION');
     const [userId, setUserId] = useState('');
+    const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
     const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState('저장되었습니다');
     const toastOpacity = useRef(new Animated.Value(0)).current;
 
-    // 유저 프로필 조회
+    // 데이터 조회
+    const fetchData = useCallback(async () => {
+        try {
+            const [profile, blockedResponse] = await Promise.all([
+                getUserProfile(),
+                getBlockedUsers(),
+            ]);
+            setUserId(profile.hashId || '');
+            setDisplayMode(profile.settings?.displayMode || 'NOTIFICATION');
+            setBlockedUsers(blockedResponse.blockedUsers || []);
+        } catch (error) {
+            console.error('Failed to fetch data:', error);
+        }
+    }, []);
+
     useFocusEffect(
         useCallback(() => {
-            const fetchProfile = async () => {
-                try {
-                    const profile = await getUserProfile();
-                    setUserId(profile.hashId || '');
-                    setDisplayMode(profile.settings?.displayMode || 'NOTIFICATION');
-                } catch (error) {
-                    console.error('Failed to fetch profile:', error);
-                }
-            };
-            fetchProfile();
-        }, [])
+            fetchData();
+        }, [fetchData])
     );
 
     const handleCopyId = async () => {
@@ -51,7 +58,8 @@ export const SettingsScreen: React.FC = () => {
     };
 
     // 토스트 표시 함수
-    const showSavedToast = () => {
+    const showToastMessage = (message: string = '저장되었습니다') => {
+        setToastMessage(message);
         setShowToast(true);
         Animated.sequence([
             Animated.timing(toastOpacity, {
@@ -77,12 +85,50 @@ export const SettingsScreen: React.FC = () => {
         try {
             setDisplayMode(mode); // 먼저 UI 업데이트
             await updateUserSettings({ displayMode: mode });
-            showSavedToast();
+            showToastMessage();
         } catch (error) {
             console.error('Failed to update settings:', error);
             // 실패 시 원래 값으로 롤백
             setDisplayMode(displayMode);
             Alert.alert('저장 실패', '설정을 저장하는 데 실패했습니다.');
+        }
+    };
+
+    // 차단 해제 핸들러
+    const handleUnblock = (user: BlockedUser) => {
+        const displayName = user.nickname || user.hashId;
+
+        if (Platform.OS === 'web') {
+            const confirmed = window.confirm(`${displayName}님의 차단을 해제할까요?`);
+            if (confirmed) {
+                unblockUser(user.hashId)
+                    .then(() => {
+                        setBlockedUsers(prev => prev.filter(u => u.hashId !== user.hashId));
+                        showToastMessage('차단이 해제되었어요.');
+                    })
+                    .catch(() => alert('차단 해제에 실패했습니다.'));
+            }
+        } else {
+            Alert.alert(
+                '차단 해제',
+                `${displayName}님의 차단을 해제할까요?`,
+                [
+                    { text: '취소', style: 'cancel' },
+                    {
+                        text: '해제',
+                        onPress: async () => {
+                            try {
+                                await unblockUser(user.hashId);
+                                setBlockedUsers(prev => prev.filter(u => u.hashId !== user.hashId));
+                                showToastMessage('차단이 해제되었어요.');
+                            } catch (error) {
+                                console.error(error);
+                                Alert.alert('오류', '차단 해제에 실패했습니다.');
+                            }
+                        }
+                    }
+                ]
+            );
         }
     };
 
@@ -163,13 +209,45 @@ export const SettingsScreen: React.FC = () => {
                             <Feather name="chevron-right" size={20} color={COLORS.textTertiary} />
                         </TouchableOpacity>
                     </View>
+
+                    {/* 차단한 사용자 섹션 - 목록이 있을 때만 표시 */}
+                    {blockedUsers.length > 0 && (
+                        <>
+                            <View style={styles.divider} />
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>차단한 사용자</Text>
+                                <View style={styles.blockedList}>
+                                    {blockedUsers.map((user) => (
+                                        <View key={user.hashId} style={styles.blockedItem}>
+                                            <View style={styles.blockedUserInfo}>
+                                                <Text style={styles.blockedUserName}>
+                                                    {user.nickname || user.hashId}
+                                                </Text>
+                                                {user.nickname && (
+                                                    <Text style={styles.blockedUserId}>
+                                                        {user.hashId}
+                                                    </Text>
+                                                )}
+                                            </View>
+                                            <TouchableOpacity
+                                                style={styles.unblockButton}
+                                                onPress={() => handleUnblock(user)}
+                                            >
+                                                <Text style={styles.unblockButtonText}>해제</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    ))}
+                                </View>
+                            </View>
+                        </>
+                    )}
                 </View>
             </ScrollView>
 
             {/* 토스트 메시지 */}
             {showToast && (
                 <Animated.View style={[styles.toast, { opacity: toastOpacity }]}>
-                    <Text style={styles.toastText}>저장되었습니다</Text>
+                    <Text style={styles.toastText}>{toastMessage}</Text>
                 </Animated.View>
             )}
         </View>
@@ -349,5 +427,46 @@ const styles = StyleSheet.create({
         fontSize: FONT_SIZES.sm,
         fontFamily: FONTS.medium,
         overflow: 'hidden',
+    },
+    // 차단 사용자 스타일
+    blockedList: {
+        gap: SPACING.sm,
+    },
+    blockedItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'rgba(255,255,255,0.6)',
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        borderRadius: 12,
+        padding: SPACING.md,
+    },
+    blockedUserInfo: {
+        flex: 1,
+    },
+    blockedUserName: {
+        fontSize: FONT_SIZES.md,
+        fontFamily: FONTS.medium,
+        color: COLORS.textPrimary,
+    },
+    blockedUserId: {
+        fontSize: FONT_SIZES.xs,
+        fontFamily: FONTS.regular,
+        color: COLORS.textTertiary,
+        marginTop: 2,
+    },
+    unblockButton: {
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.xs,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        borderRadius: 16,
+        backgroundColor: 'rgba(255,255,255,0.8)',
+    },
+    unblockButtonText: {
+        fontSize: FONT_SIZES.sm,
+        fontFamily: FONTS.medium,
+        color: COLORS.textSecondary,
     },
 });
