@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
         borderColor: COLORS.border,
         borderRadius: 12,
         padding: SPACING.md,
-        fontSize: FONT_SIZES.md,
+        fontSize: FONT_SIZES.sm,
         fontFamily: FONTS.regular,
         color: COLORS.textPrimary,
     },

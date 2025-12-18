@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.sm,
     },
     description: {
-        fontSize: FONT_SIZES.sm,
+        fontSize: FONT_SIZES.xs,
         fontFamily: FONTS.regular,
         color: COLORS.textSecondary,
         marginBottom: SPACING.md,
