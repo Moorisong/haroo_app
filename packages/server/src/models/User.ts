@@ -8,6 +8,7 @@ export interface IUser extends Document {
         displayMode: 'WIDGET' | 'NOTIFICATION';
     };
     blockedUsers: string[]; // 차단한 유저의 hashId 목록
+    fcmToken?: string; // FCM 푸시 알림 토큰
     refreshToken?: string; // 리프레시 토큰
     refreshTokenExpiresAt?: Date; // 리프레시 토큰 만료 시간
     createdAt: Date;
@@ -40,6 +41,10 @@ const UserSchema: Schema = new Schema({
         }
     },
     blockedUsers: [{ type: String }],
+    fcmToken: {
+        type: String,
+        required: false,
+    },
     refreshToken: {
         type: String,
         required: false, // 로그인 시에만 생성
