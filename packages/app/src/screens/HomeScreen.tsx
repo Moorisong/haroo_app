@@ -151,17 +151,19 @@ export const HomeScreen: React.FC = () => {
 
         // 1. Determine Identity (Sender vs Receiver)
         let isReceiver = false;
-        if (connection) {
+        if (connection && connection.initiator) {
             const initiatorId = typeof connection.initiator === 'string'
                 ? connection.initiator
-                : connection.initiator._id || (connection.initiator as any).id;
+                : (connection.initiator as any)?._id || (connection.initiator as any)?.id;
 
             // user._id 또는 user.id와 initiator 비교
             const currentUserId = user?._id || user?.id;
 
             // user.id matches initiator -> Sender
             // user.id does NOT match initiator -> Receiver
-            isReceiver = currentUserId !== initiatorId?.toString();
+            if (initiatorId) {
+                isReceiver = currentUserId !== initiatorId.toString();
+            }
 
             console.log('[HomeScreen] currentUserId:', currentUserId, 'initiatorId:', initiatorId, 'isReceiver:', isReceiver);
         }
@@ -383,6 +385,13 @@ const PendingReceiverContent: React.FC<PendingReceiverProps> = ({ connection, on
                 <Text style={styles.subText}>
                     {MESSAGES.PENDING_RECEIVER.SUB}
                 </Text>
+                {connection.durationDays && (
+                    <View style={styles.durationBadge}>
+                        <Text style={styles.durationBadgeText}>
+                            {connection.durationDays}일 동안 하루 1회 메시지를 받게 됩니다
+                        </Text>
+                    </View>
+                )}
             </View>
             <View style={[styles.buttonContainer, { marginBottom: SPACING.xxl + 20 }]}>
                 <PrimaryButton
@@ -499,6 +508,19 @@ const styles = StyleSheet.create({
     mainTextContainer: { alignItems: 'center', marginBottom: SPACING.lg },
     mainText: { fontSize: 28, color: COLORS.textPrimary, fontWeight: 'bold', fontFamily: FONTS.serif, textAlign: 'center', lineHeight: 42 },
     subText: { fontSize: FONT_SIZES.md, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 24 },
+    durationBadge: {
+        backgroundColor: 'rgba(160, 128, 96, 0.1)',
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.sm,
+        borderRadius: 12,
+        marginTop: SPACING.lg,
+    },
+    durationBadgeText: {
+        fontSize: FONT_SIZES.sm,
+        color: COLORS.accent,
+        fontFamily: FONTS.medium,
+        textAlign: 'center',
+    },
     buttonContainer: { width: '100%', paddingHorizontal: SPACING.sm, marginBottom: SPACING.xxl },
     waitingIndicator: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.xl },
     dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.accentMuted },
