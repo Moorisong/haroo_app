@@ -175,11 +175,13 @@ export const ReceiveScreen: React.FC = () => {
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.content}>
 
-                    {/* 메시지 표시 카드 */}
-                    <View style={styles.messageCard}>
-                        <Text style={styles.messageText}>{message.content}</Text>
-                        <View style={styles.dateContainer}>
-                            <Text style={styles.dateText}>{formatDate(message.sentAt)}</Text>
+                    {/* 메시지 표시 카드 - 이중 박스 구조 */}
+                    <View style={styles.messageCardOuter}>
+                        <View style={styles.messageCardInner}>
+                            <Text style={styles.messageText}>{message.content}</Text>
+                            <View style={styles.dateContainer}>
+                                <Text style={styles.dateText}>{formatDate(message.sentAt)}</Text>
+                            </View>
                         </View>
                     </View>
 
@@ -252,7 +254,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: SPACING.lg,
-        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingTop: Platform.OS === 'ios' ? 70 : 50,
         paddingBottom: SPACING.md,
     },
     backButton: {
@@ -271,21 +273,17 @@ const styles = StyleSheet.create({
         padding: SPACING.lg,
         paddingBottom: SPACING.xxl,
     },
-    messageCard: {
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        borderRadius: 20,
-        padding: SPACING.xl,
+    messageCardOuter: {
+        borderRadius: 24,
+        borderWidth: 1.5,
+        borderColor: COLORS.accentLight,
+        padding: 6,
         marginBottom: SPACING.xl,
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-        elevation: 2,
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.5)',
+    },
+    messageCardInner: {
+        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+        borderRadius: 18,
+        padding: SPACING.xl,
     },
     messageText: {
         fontSize: FONT_SIZES.lg, // 16px
@@ -296,6 +294,7 @@ const styles = StyleSheet.create({
     },
     dateContainer: {
         alignItems: 'flex-end',
+        marginTop: SPACING.md,
     },
     dateText: {
         fontSize: FONT_SIZES.xs,
@@ -343,13 +342,16 @@ const styles = StyleSheet.create({
         marginTop: SPACING.md,
     },
     blockButton: {
-        padding: SPACING.sm,
+        width: '100%',
+        padding: SPACING.md,
+        alignItems: 'center',
+        backgroundColor: COLORS.dangerLight,
+        borderRadius: 16,
     },
     blockButtonText: {
-        fontSize: FONT_SIZES.sm,
-        fontFamily: FONTS.regular,
-        color: '#E07878', // Red for block action
-        textDecorationLine: 'underline',
+        fontSize: FONT_SIZES.md,
+        fontFamily: FONTS.medium,
+        color: COLORS.danger,
     },
     blockedContainer: {
         alignItems: 'center',
