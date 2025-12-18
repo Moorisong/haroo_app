@@ -102,6 +102,71 @@ export const blockUser = async (req: Request, res: Response, next: NextFunction)
     }
 };
 
+// @desc    Unblock a user
+// @route   DELETE /users/block/:targetHashId
+// @access  Private
+export const unblockUser = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { targetHashId } = req.params;
+
+        // 1. 유효성 검사
+        if (!targetHashId) {
+            res.status(400);
+            throw new Error('targetHashId is required');
+        }
+
+        // 2. 현재 사용자 조회
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            res.status(404);
+            throw new Error('User not found');
+        }
+
+        // 3. 차단 목록에 없으면 에러
+        const index = user.blockedUsers.indexOf(targetHashId);
+        if (index === -1) {
+            res.status(404);
+            throw new Error('User not in blocked list');
+        }
+
+        // 4. blockedUsers 배열에서 제거
+        user.blockedUsers.splice(index, 1);
+        await user.save();
+
+        res.json({
+            message: 'User unblocked successfully',
+            blockedUsers: user.blockedUsers,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get list of blocked users with details
+// @route   GET /users/blocked
+// @access  Private
+export const getBlockedUsers = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            res.status(404);
+            throw new Error('User not found');
+        }
+
+        // 차단된 유저들의 상세 정보 조회 (hashId와 nickname)
+        const blockedUserDetails = await User.find(
+            { hashId: { $in: user.blockedUsers } },
+            { hashId: 1, nickname: 1, _id: 0 }
+        );
+
+        res.json({
+            blockedUsers: blockedUserDetails,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc    Register FCM token for push notifications
 // @route   POST /users/fcm-token
 // @access  Private
