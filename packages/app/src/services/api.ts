@@ -11,23 +11,12 @@ const api = axios.create({
     },
 });
 
-// Function to refresh access token
-const refreshAccessToken = async (refreshToken: string) => {
-    try {
-        const response = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken });
-        return response.data.accessToken;
-    } catch (error) {
-        console.error('Error refreshing token:', error);
-        throw error;
-    }
-};
-
 // Function to set up Axios interceptors
-export const setupAxiosInterceptors = (setAccessToken: (token: string | null) => void, logout: () => Promise<void>) => {
+export const setupAxiosInterceptors = (logout: () => Promise<void>) => {
     // Request Interceptor: Attach Access Token
     api.interceptors.request.use(
         async (config) => {
-            const token = await AsyncStorage.getItem('accessToken'); // Use accessToken
+            const token = await AsyncStorage.getItem('accessToken');
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
@@ -38,36 +27,13 @@ export const setupAxiosInterceptors = (setAccessToken: (token: string | null) =>
         }
     );
 
-    // Response Interceptor: Handle 401 and refresh token
+    // Response Interceptor: Handle 401 (token expired) = logout
     api.interceptors.response.use(
         (response) => response,
         async (error) => {
-            const originalRequest = error.config;
-            // If error is 401 and not a refresh token request itself
-            if (error.response?.status === 401 && !originalRequest._retry) {
-                originalRequest._retry = true; // Mark request as retried
-
-                try {
-                    const refreshToken = await AsyncStorage.getItem('refreshToken');
-                    if (!refreshToken) {
-                        // No refresh token, log out user
-                        await logout();
-                        return Promise.reject(error);
-                    }
-
-                    const newAccessToken = await refreshAccessToken(refreshToken);
-                    setAccessToken(newAccessToken); // Update access token in state
-                    await AsyncStorage.setItem('accessToken', newAccessToken); // Update in storage
-
-                    // Retry original request with new access token
-                    originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-                    return api(originalRequest);
-
-                } catch (refreshError) {
-                    // Refresh token failed, log out user
-                    await logout();
-                    return Promise.reject(refreshError);
-                }
+            if (error.response?.status === 401) {
+                // 토큰 만료 또는 유효하지 않음 → 로그아웃
+                await logout();
             }
             return Promise.reject(error);
         }
@@ -76,6 +42,7 @@ export const setupAxiosInterceptors = (setAccessToken: (token: string | null) =>
 
 // Export the configured axios instance
 export default api;
+
 
 export const getCurrentMode = async (): Promise<Connection> => {
     try {

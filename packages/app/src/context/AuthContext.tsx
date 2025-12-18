@@ -1,16 +1,14 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { setupAxiosInterceptors } from '../services/api'; // Import the setup function
+import * as Linking from 'expo-linking';
+import { setupAxiosInterceptors } from '../services/api';
 
 interface AuthContextType {
     isLoading: boolean;
     accessToken: string | null;
-    refreshToken: string | null;
     userInfo: any | null;
-    login: (accessToken: string, refreshToken: string, user: any) => Promise<void>;
+    login: (token: string) => Promise<void>;
     logout: () => Promise<void>;
-    setAccessToken: (token: string | null) => void; // For interceptor to update
-    setRefreshToken: (token: string | null) => void; // For interceptor to update
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,63 +16,110 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [accessToken, setAccessToken] = useState<string | null>(null);
-    const [refreshToken, setRefreshToken] = useState<string | null>(null);
     const [userInfo, setUserInfo] = useState<any | null>(null);
 
-    const login = async (newAccessToken: string, newRefreshToken: string, user: any) => {
+    // 단순화된 로그인 (단일 토큰)
+    const login = useCallback(async (token: string) => {
         setIsLoading(true);
-        setAccessToken(newAccessToken);
-        setRefreshToken(newRefreshToken);
-        setUserInfo(user);
-        await AsyncStorage.setItem('accessToken', newAccessToken);
-        await AsyncStorage.setItem('refreshToken', newRefreshToken);
-        await AsyncStorage.setItem('userInfo', JSON.stringify(user));
+        setAccessToken(token);
+        await AsyncStorage.setItem('accessToken', token);
         setIsLoading(false);
-    };
+    }, []);
 
-    const logout = async () => {
+    const logout = useCallback(async () => {
         setIsLoading(true);
         setAccessToken(null);
-        setRefreshToken(null);
         setUserInfo(null);
         await AsyncStorage.removeItem('accessToken');
-        await AsyncStorage.removeItem('refreshToken');
         await AsyncStorage.removeItem('userInfo');
         setIsLoading(false);
-    };
+    }, []);
 
-    const isLoggedIn = async () => {
+    // 저장된 토큰 확인
+    const checkStoredToken = useCallback(async () => {
         try {
             setIsLoading(true);
-            let storedAccessToken = await AsyncStorage.getItem('accessToken');
-            let storedRefreshToken = await AsyncStorage.getItem('refreshToken');
-            let userInfoStr = await AsyncStorage.getItem('userInfo');
+            const storedToken = await AsyncStorage.getItem('accessToken');
+            const storedUserInfo = await AsyncStorage.getItem('userInfo');
 
-            if (storedAccessToken && storedRefreshToken) {
-                setAccessToken(storedAccessToken);
-                setRefreshToken(storedRefreshToken);
-                if (userInfoStr) {
-                    setUserInfo(JSON.parse(userInfoStr));
+            if (storedToken) {
+                setAccessToken(storedToken);
+                if (storedUserInfo) {
+                    setUserInfo(JSON.parse(storedUserInfo));
                 }
             }
         } catch (e) {
-            console.log(`isLoggedIn error ${e}`);
+            console.log(`checkStoredToken error ${e}`);
         } finally {
             setIsLoading(false);
         }
-    };
-
-    useEffect(() => {
-        isLoggedIn();
     }, []);
 
-    // Setup Axios interceptors when AuthContext is ready
+    // 딥링크 처리
+    const handleDeepLink = useCallback(async (url: string) => {
+        console.log('[AuthContext] handleDeepLink called with:', url);
+        try {
+            const parsed = Linking.parse(url);
+            console.log('[AuthContext] Parsed URL:', JSON.stringify(parsed));
+
+            // 토큰 추출 시도 (여러 형식 지원)
+            let token: string | null = null;
+
+            // 1. haroo://login?token=xxx 형태
+            if (parsed.queryParams?.token) {
+                token = parsed.queryParams.token as string;
+                console.log('[AuthContext] Token found in queryParams');
+            }
+
+            // 2. URL에서 직접 token 파라미터 추출 (fallback)
+            if (!token) {
+                const tokenMatch = url.match(/[?&]token=([^&]+)/);
+                if (tokenMatch) {
+                    token = decodeURIComponent(tokenMatch[1]);
+                    console.log('[AuthContext] Token found via regex');
+                }
+            }
+
+            if (token) {
+                console.log('[AuthContext] Logging in with token...');
+                await login(token);
+                console.log('[AuthContext] Login complete!');
+            } else {
+                console.log('[AuthContext] No token found in URL');
+            }
+        } catch (error) {
+            console.error('[AuthContext] Deep link handling error:', error);
+        }
+    }, [login]);
+
+    // 초기화 및 딥링크 리스너 설정
     useEffect(() => {
-        setupAxiosInterceptors(setAccessToken, logout);
-    }, [setAccessToken, logout]); // Dependencies to re-run if these functions change
+        checkStoredToken();
+
+        // 앱이 딥링크로 열렸는지 확인
+        Linking.getInitialURL().then((url) => {
+            if (url) {
+                handleDeepLink(url);
+            }
+        });
+
+        // 딥링크 리스너 등록 (앱이 이미 열려있을 때)
+        const subscription = Linking.addEventListener('url', (event) => {
+            handleDeepLink(event.url);
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, [checkStoredToken, handleDeepLink]);
+
+    // Axios interceptor 설정
+    useEffect(() => {
+        setupAxiosInterceptors(logout);
+    }, [logout]);
 
     return (
-        <AuthContext.Provider value={{ login, logout, isLoading, accessToken, refreshToken, userInfo, setAccessToken, setRefreshToken }}>
+        <AuthContext.Provider value={{ login, logout, isLoading, accessToken, userInfo }}>
             {children}
         </AuthContext.Provider>
     );
