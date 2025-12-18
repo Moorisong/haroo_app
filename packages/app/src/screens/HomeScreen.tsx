@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
     View,
     Text,
@@ -156,8 +156,14 @@ export const HomeScreen: React.FC = () => {
                 ? connection.initiator
                 : connection.initiator._id || (connection.initiator as any).id;
 
+            // user._id 또는 user.id와 initiator 비교
+            const currentUserId = user?._id || user?.id;
+
             // user.id matches initiator -> Sender
-            isReceiver = user?.id !== initiatorId.toString();
+            // user.id does NOT match initiator -> Receiver
+            isReceiver = currentUserId !== initiatorId?.toString();
+
+            console.log('[HomeScreen] currentUserId:', currentUserId, 'initiatorId:', initiatorId, 'isReceiver:', isReceiver);
         }
         // If no connection, default to Sender view (NoneStateContent) so user can initiate request
         // isReceiver remains false
@@ -233,7 +239,7 @@ export const HomeScreen: React.FC = () => {
                                 style={styles.settingsButton}
                                 onPress={() => navigation.navigate('Settings')}
                             >
-                                <Feather name="settings" size={16} color={COLORS.textTertiary} />
+                                <Feather name="settings" size={20} color={COLORS.textTertiary} />
                             </TouchableOpacity>
                         </View>
                     )}
@@ -267,23 +273,36 @@ const NoneStateContent: React.FC<{ onRequest: () => void }> = ({ onRequest }) =>
     </View>
 );
 
-const PendingSenderContent: React.FC = () => (
-    <View style={styles.stateContainer}>
-        <View style={styles.centerContent}>
-            <View style={styles.mainTextContainer}>
-                <Text style={styles.mainText}>상대의 수락을{'\n'}기다리고 있어요.</Text>
-            </View>
-            <Text style={styles.subText}>
-                메시지 모드가 활성화되면{'\n'}하루에 한 번 메시지를 보낼 수 있어요.
-            </Text>
-            <View style={styles.waitingIndicator}>
-                <View style={[styles.dot, styles.dotActive]} />
-                <View style={styles.dot} />
-                <View style={styles.dot} />
+
+const PendingSenderContent: React.FC = () => {
+    const [activeDot, setActiveDot] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setActiveDot((prev) => (prev + 1) % 3);
+        }, 500);
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <View style={styles.stateContainer}>
+            <View style={styles.centerContent}>
+                <View style={styles.mainTextContainer}>
+                    <Text style={styles.mainText}>상대의 수락을{'\n'}기다리고 있어요.</Text>
+                </View>
+                <Text style={styles.subText}>
+                    메시지 모드가 활성화되면{'\n'}하루에 한 번 메시지를 보낼 수 있어요.
+                </Text>
+                <View style={styles.waitingIndicator}>
+                    <View style={[styles.dot, activeDot === 0 && styles.dotActive]} />
+                    <View style={[styles.dot, activeDot === 1 && styles.dotActive]} />
+                    <View style={[styles.dot, activeDot === 2 && styles.dotActive]} />
+                </View>
             </View>
         </View>
-    </View>
-);
+    );
+};
+
 
 interface PendingReceiverProps {
     connection: Connection;
@@ -365,7 +384,7 @@ const PendingReceiverContent: React.FC<PendingReceiverProps> = ({ connection, on
                     {MESSAGES.PENDING_RECEIVER.SUB}
                 </Text>
             </View>
-            <View style={styles.buttonContainer}>
+            <View style={[styles.buttonContainer, { marginBottom: SPACING.xxl + 20 }]}>
                 <PrimaryButton
                     title={isProcessing ? "처리 중..." : MESSAGES.PENDING_RECEIVER.BUTTON.ACCEPT}
                     onPress={handleAcceptPress}
@@ -381,11 +400,11 @@ const PendingReceiverContent: React.FC<PendingReceiverProps> = ({ connection, on
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={styles.textButton}
+                    style={styles.blockTextButton}
                     onPress={handleBlockPress}
                     disabled={isProcessing}
                 >
-                    <Text style={styles.textButtonLabel}>{MESSAGES.PENDING_RECEIVER.BUTTON.BLOCK}</Text>
+                    <Text style={styles.blockTextLabel}>{MESSAGES.PENDING_RECEIVER.BUTTON.BLOCK}</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -466,21 +485,21 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end',
         alignItems: 'center',
         paddingHorizontal: SPACING.lg,
-        paddingTop: SPACING.md,
+        paddingTop: SPACING.xxl + 10,
         gap: SPACING.sm,
     },
     settingsButton: {
-        padding: SPACING.xs,
+        padding: SPACING.sm,
         backgroundColor: 'rgba(0,0,0,0.04)',
         borderRadius: 14,
     },
     content: { flex: 1, paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xxl },
     stateContainer: { flex: 1, justifyContent: 'space-between' },
-    centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: -60 },
     mainTextContainer: { alignItems: 'center', marginBottom: SPACING.lg },
-    mainText: { fontSize: 26, color: COLORS.textPrimary, fontWeight: 'bold', fontFamily: FONTS.serif, textAlign: 'center', lineHeight: 40 },
-    subText: { fontSize: FONT_SIZES.sm, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 18 },
-    buttonContainer: { width: '100%', paddingHorizontal: SPACING.sm, marginBottom: SPACING.xl },
+    mainText: { fontSize: 28, color: COLORS.textPrimary, fontWeight: 'bold', fontFamily: FONTS.serif, textAlign: 'center', lineHeight: 42 },
+    subText: { fontSize: FONT_SIZES.md, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 24 },
+    buttonContainer: { width: '100%', paddingHorizontal: SPACING.sm, marginBottom: SPACING.xxl },
     waitingIndicator: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.xl },
     dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.accentMuted },
     dotActive: { backgroundColor: COLORS.accent },
@@ -518,9 +537,22 @@ const styles = StyleSheet.create({
         width: '100%',
         padding: SPACING.md,
         alignItems: 'center',
-        marginTop: SPACING.xs,
+        marginTop: SPACING.sm,
+        backgroundColor: COLORS.dangerLight,
+        borderRadius: 16,
     },
     textButtonLabel: {
+        fontSize: FONT_SIZES.md,
+        color: COLORS.danger,
+        fontFamily: FONTS.medium,
+    },
+    blockTextButton: {
+        width: '100%',
+        padding: SPACING.md,
+        alignItems: 'center',
+        marginTop: SPACING.xs,
+    },
+    blockTextLabel: {
         fontSize: FONT_SIZES.sm,
         color: COLORS.textTertiary,
         textDecorationLine: 'underline',
@@ -548,16 +580,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.lg,
     },
     messageCard: {
-        backgroundColor: 'rgba(255,255,255,0.9)',
+        backgroundColor: 'transparent',
         borderRadius: 20,
         padding: SPACING.lg,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,1)',
+        borderColor: COLORS.border,
     },
     messageHeader: {
         flexDirection: 'row',
@@ -574,10 +601,10 @@ const styles = StyleSheet.create({
         padding: 4,
     },
     messageBody: {
-        fontSize: FONT_SIZES.md,
+        fontSize: FONT_SIZES.lg,
         color: COLORS.textPrimary,
         fontFamily: FONTS.medium,
-        lineHeight: 24,
+        lineHeight: 28,
     },
 });
 
