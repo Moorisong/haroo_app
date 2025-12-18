@@ -1,35 +1,41 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { COLORS } from '../constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 
 export const BubbleBackground = () => (
     <View style={StyleSheet.absoluteFill}>
         <View style={styles.bubbleContainer}>
-            {/* 배경 베이스 색상 */}
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: '#FDFCF8' }]} />
+            {/* 베이스 그라데이션 배경 */}
+            <LinearGradient
+                colors={['#FEFDFB', '#FBF8F4', '#F9F5EF']}
+                style={StyleSheet.absoluteFill}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+            />
 
-            {/* 큰 버블들 */}
+            {/* 부드러운 버블 그라데이션들 - 더 연한 색상 */}
             <View style={[styles.bubble, {
-                top: -100, left: -50, width: 400, height: 400,
-                backgroundColor: '#F5EBE0',
-                borderRadius: 200
+                top: -80, left: -80, width: 320, height: 320,
+                backgroundColor: 'rgba(245, 235, 224, 0.4)',
+                borderRadius: 160
             }]} />
             <View style={[styles.bubble, {
-                top: 200, right: -100, width: 300, height: 300,
-                backgroundColor: '#E8DED5',
-                borderRadius: 150
+                top: 150, right: -60, width: 240, height: 240,
+                backgroundColor: 'rgba(232, 222, 213, 0.35)',
+                borderRadius: 120
             }]} />
             <View style={[styles.bubble, {
-                bottom: -50, left: 50, width: 250, height: 250,
-                backgroundColor: '#F0E6DD',
-                borderRadius: 125
+                bottom: 100, left: -40, width: 200, height: 200,
+                backgroundColor: 'rgba(240, 230, 221, 0.3)',
+                borderRadius: 100
             }]} />
-
-            {/* 전체 블러 처리로 몽환적인 느낌 연출 */}
-            <BlurView intensity={60} style={StyleSheet.absoluteFill} tint="light" />
+            <View style={[styles.bubble, {
+                bottom: -60, right: 20, width: 180, height: 180,
+                backgroundColor: 'rgba(248, 242, 236, 0.4)',
+                borderRadius: 90
+            }]} />
         </View>
     </View>
 );

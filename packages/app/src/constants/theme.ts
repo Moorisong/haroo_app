@@ -43,12 +43,12 @@ export const FONTS = {
 };
 
 export const FONT_SIZES = {
-    xs: 10,
-    sm: 11,
-    md: 13,
-    lg: 15,
-    xl: 18,
-    xxl: 22,
+    xs: 12,
+    sm: 14,
+    md: 16,
+    lg: 18,
+    xl: 22,
+    xxl: 28,
 };
 
 export const SPACING = {
