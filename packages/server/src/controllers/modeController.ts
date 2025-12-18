@@ -46,7 +46,13 @@ export const requestMode = async (req: Request, res: Response, next: NextFunctio
             throw new Error('User not found');
         }
 
-        // 2. 차단 여부 확인 (상대가 나를 차단했는지)
+        // 2. 차단 여부 확인 (내가 상대방을 차단했는지)
+        if (initiator.blockedUsers && initiator.blockedUsers.includes(targetHashId)) {
+            res.status(403);
+            throw new Error('You have blocked this user');
+        }
+
+        // 3. 차단 여부 확인 (상대가 나를 차단했는지)
         if (recipient.blockedUsers && recipient.blockedUsers.includes(initiator.hashId)) {
             res.status(403);
             throw new Error('You are blocked by this user');

@@ -61,6 +61,8 @@ export const RequestScreen: React.FC = () => {
                 displayMessage = MESSAGES.ID_INPUT.SELF.TITLE;
             } else if (errorMessage === 'You are blocked by this user') {
                 displayMessage = MESSAGES.REQUEST_UNAVAILABLE.BLOCKED_BY_PEER.TITLE;
+            } else if (errorMessage === 'You have blocked this user') {
+                displayMessage = '차단한 사용자에게는\n메시지 모드를 신청할 수 없어요.\n설정에서 차단을 해제하면 다시 신청할 수 있어요.';
             }
             // Add more specific error messages as needed based on backend responses
 
