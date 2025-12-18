@@ -112,7 +112,7 @@ export const sendMessage = async (payload: SendMessagePayload): Promise<any> => 
 export interface ReceivedMessage {
     _id: string;
     modeId: string;
-    sender: { _id: string; hashId: string } | string;
+    sender: { _id: string; hashId: string; nickname?: string } | string;
     content: string;
     isRead: boolean;
     sentAt: string;
