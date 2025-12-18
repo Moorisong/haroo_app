@@ -19,13 +19,10 @@ import { UserIdCard } from '../components/UserIdCard';
 import { getUserProfile, updateUserSettings, getBlockedUsers, unblockUser, BlockedUser } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-type DisplayMode = 'WIDGET' | 'NOTIFICATION';
-
 export const SettingsScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const { logout } = useAuth();
 
-    const [displayMode, setDisplayMode] = useState<DisplayMode>('NOTIFICATION');
     const [userId, setUserId] = useState('');
     const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
     const [showToast, setShowToast] = useState(false);
@@ -40,7 +37,6 @@ export const SettingsScreen: React.FC = () => {
                 getBlockedUsers(),
             ]);
             setUserId(profile.hashId || '');
-            setDisplayMode(profile.settings?.displayMode || 'NOTIFICATION');
             setBlockedUsers(blockedResponse.blockedUsers || []);
         } catch (error) {
             console.error('Failed to fetch data:', error);
@@ -78,22 +74,6 @@ export const SettingsScreen: React.FC = () => {
                 useNativeDriver: true,
             }),
         ]).start(() => setShowToast(false));
-    };
-
-    // 표시 방식 변경 핸들러
-    const handleDisplayModeChange = async (mode: DisplayMode) => {
-        if (mode === displayMode) return;
-
-        try {
-            setDisplayMode(mode); // 먼저 UI 업데이트
-            await updateUserSettings({ displayMode: mode });
-            showToastMessage();
-        } catch (error) {
-            console.error('Failed to update settings:', error);
-            // 실패 시 원래 값으로 롤백
-            setDisplayMode(displayMode);
-            Alert.alert('저장 실패', '설정을 저장하는 데 실패했습니다.');
-        }
     };
 
     // 차단 해제 핸들러
@@ -159,31 +139,6 @@ export const SettingsScreen: React.FC = () => {
                         <Text style={styles.description}>
                             상대방이 이 ID를 통해 나에게 메시지 모드를 신청할 수 있어요.
                         </Text>
-                    </View>
-
-                    <View style={styles.divider} />
-
-                    {/* 표시 방식 선택 섹션 */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>표시 방식 선택</Text>
-                        <Text style={styles.description}>
-                            메시지는 선택한 방식으로만 표시돼요.
-                        </Text>
-
-                        <View style={styles.optionsContainer}>
-                            <OptionCard
-                                label="홈 화면 위젯"
-                                icon="layout"
-                                selected={displayMode === 'WIDGET'}
-                                onPress={() => handleDisplayModeChange('WIDGET')}
-                            />
-                            <OptionCard
-                                label="알림바 고정"
-                                icon="bell"
-                                selected={displayMode === 'NOTIFICATION'}
-                                onPress={() => handleDisplayModeChange('NOTIFICATION')}
-                            />
-                        </View>
                     </View>
 
                     <View style={styles.divider} />

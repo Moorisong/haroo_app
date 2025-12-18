@@ -1,14 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Alert,
-    Platform,
-    ActivityIndicator,
-    Animated,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Image, Alert, TouchableOpacity, ActivityIndicator, Platform, Animated } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
@@ -78,11 +69,15 @@ export const ReceiveScreen: React.FC = () => {
                 const senderHashId = typeof messageSenderValues === 'string'
                     ? messageSenderValues
                     : messageSenderValues.hashId;
+                const senderNickname = typeof messageSenderValues === 'object'
+                    ? messageSenderValues.nickname
+                    : undefined;
 
                 if (profileResponse.blockedUsers?.includes(senderHashId)) {
                     setIsBlocked(true);
                 }
 
+                // 처음 읽는 메시지면 읽음 처리
                 if (!messageResponse.message.isRead) {
                     try {
                         await markMessageAsRead(messageResponse.message._id);
@@ -172,6 +167,7 @@ export const ReceiveScreen: React.FC = () => {
                         <Feather name="arrow-left" size={24} color={COLORS.textPrimary} />
                     </TouchableOpacity>
                 </View>
+                {/* Debug Button */}
                 <View style={styles.emptyContainer}>
                     <View style={styles.emptyIconWrapper}>
                         <Feather name="inbox" size={32} color={COLORS.textTertiary} />

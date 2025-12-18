@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import api from './api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 알림 핸들러 설정 (앱이 포그라운드일 때 알림 표시 방식)
 Notifications.setNotificationHandler({
@@ -72,7 +73,7 @@ export const setupNotificationListeners = (
     onNotificationResponse?: (response: Notifications.NotificationResponse) => void
 ) => {
     // 알림 수신 시 (앱이 포그라운드일 때)
-    const notificationListener = Notifications.addNotificationReceivedListener((notification) => {
+    const notificationListener = Notifications.addNotificationReceivedListener(async (notification) => {
         console.log('알림 수신:', notification);
         onNotificationReceived?.(notification);
     });
@@ -89,3 +90,4 @@ export const setupNotificationListeners = (
         responseListener.remove();
     };
 };
+
