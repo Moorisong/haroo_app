@@ -40,6 +40,9 @@ export const HomeScreen: React.FC = () => {
     const [toastMessage, setToastMessage] = useState('');
     const toastOpacity = React.useRef(new Animated.Value(0)).current;
 
+    // Local state for receiver message card
+    const [isMessageClosed, setIsMessageClosed] = useState(false);
+
     const showToastMsg = (message: string) => {
         setToastMessage(message);
         setShowToast(true);
@@ -97,7 +100,8 @@ export const HomeScreen: React.FC = () => {
     const handleAccept = async (id: string) => {
         try {
             await acceptMode(id);
-            // Alert removed as per request
+            // Show Toast as per spec
+            showToastMsg(MESSAGES.PENDING_RECEIVER.TOAST.ACCEPT_COMPLETE);
             await fetchData();
         } catch (err) {
             Alert.alert('수락 실패', '요청을 수락하는 중 오류가 발생했습니다.');
@@ -138,32 +142,30 @@ export const HomeScreen: React.FC = () => {
 
     const renderContent = () => {
         if (isLoading) {
-            return <ActivityIndicator size="large" color={COLORS.accent} style={styles.centerContent} />;
+            return <ActivityIndicator size="large" color={COLORS.accent} />;
         }
 
-        if (error || !user) { // Removed !connection from this condition
-            return (
-                <View style={styles.centerContent}>
-                    <Text style={styles.errorText}>{error || '데이터를 불러올 수 없습니다.'}</Text>
-                </View>
-            );
+        if (error) {
+            return <Text style={styles.errorText}>{error}</Text>;
         }
 
-        // If connection is null, default to 'NONE' status
-        const status = connection?.status || 'NONE';
-
-        if (status === 'PENDING') {
-            if (!connection) return null;
-            // connection.initiator can be string or object dependent on populate
-            // Since backend populates it, it should be an object. We check _id.
-            // user.id comes from profile generic response which has id mapped from _id.
+        // 1. Determine Identity (Sender vs Receiver)
+        let isReceiver = false;
+        if (connection) {
             const initiatorId = typeof connection.initiator === 'string'
                 ? connection.initiator
-                : connection.initiator._id || (connection.initiator as any).id; // Fallback just in case
+                : connection.initiator._id || (connection.initiator as any).id;
 
-            const isReceiver = user.id !== initiatorId.toString();
+            // user.id matches initiator -> Sender
+            isReceiver = user?.id !== initiatorId.toString();
+        }
+        // If no connection, default to Sender view (NoneStateContent) so user can initiate request
+        // isReceiver remains false
 
-            if (isReceiver) {
+        // 2. Receiver View
+        if (isReceiver) {
+            // Pending Request
+            if (connection?.status === 'PENDING') {
                 return (
                     <PendingReceiverContent
                         connection={connection}
@@ -173,28 +175,45 @@ export const HomeScreen: React.FC = () => {
                     />
                 );
             }
+
+            // Receiver in ACTIVE state -> Show same UI, but hide send button
+            return (
+                <ActiveStateContent
+                    daysRemaining={getDaysRemaining()}
+                    canSendToday={false}
+                    onSendMessage={handleSendMessage}
+                    hasNewMessage={receivedMessage !== null}
+                    onViewMessage={() => navigation.navigate('Receive')}
+                    isReceiver={true}
+                />
+            );
+        }
+
+        // 3. Sender View (Existing Logic)
+        const status = connection?.status || 'NONE';
+
+        if (status === 'PENDING') {
             return <PendingSenderContent />;
         }
 
-        switch (status) {
-            case 'NONE':
-                return <NoneStateContent onRequest={handleRequestMode} />;
-            case 'ACTIVE_PERIOD':
-                return (
-                    <ActiveStateContent
-                        daysRemaining={getDaysRemaining()}
-                        canSendToday={connection?.canSendToday ?? false}
-                        onSendMessage={handleSendMessage}
-                        hasNewMessage={receivedMessage !== null}
-                        onViewMessage={() => navigation.navigate('Receive')}
-                    />
-                );
-            case 'EXPIRED':
-            case 'REJECTED':
-                return <ExpiredStateContent onRequest={handleRequestMode} />;
-            default:
-                return <NoneStateContent onRequest={handleRequestMode} />;
+        if (status === 'ACTIVE_PERIOD') {
+            return (
+                <ActiveStateContent
+                    daysRemaining={getDaysRemaining()}
+                    canSendToday={connection?.canSendToday ?? false}
+                    onSendMessage={handleSendMessage}
+                    hasNewMessage={receivedMessage !== null}
+                    onViewMessage={() => navigation.navigate('Receive')}
+                    isReceiver={false}
+                />
+            );
         }
+
+        if (status === 'EXPIRED' || status === 'REJECTED') {
+            return <ExpiredStateContent onRequest={handleRequestMode} />;
+        }
+
+        return <NoneStateContent onRequest={handleRequestMode} />;
     };
 
     return (
@@ -379,6 +398,7 @@ interface ActiveStateContentProps {
     onSendMessage: () => void;
     hasNewMessage?: boolean;
     onViewMessage?: () => void;
+    isReceiver?: boolean;
 }
 
 const ActiveStateContent: React.FC<ActiveStateContentProps> = ({
@@ -386,7 +406,8 @@ const ActiveStateContent: React.FC<ActiveStateContentProps> = ({
     canSendToday,
     onSendMessage,
     hasNewMessage,
-    onViewMessage
+    onViewMessage,
+    isReceiver = false
 }) => (
     <View style={styles.stateContainer}>
         <View style={styles.centerContent}>
@@ -402,17 +423,23 @@ const ActiveStateContent: React.FC<ActiveStateContentProps> = ({
                 </TouchableOpacity>
             )}
 
-            <Text style={styles.sendStatus}>
-                {canSendToday ? '오늘 메시지 전송 가능' : '오늘 메시지를 이미 보냈어요'}
-            </Text>
+            {/* 발신자에게만 전송 상태 표시 */}
+            {!isReceiver && (
+                <Text style={styles.sendStatus}>
+                    {canSendToday ? '오늘 메시지 전송 가능' : '오늘 메시지를 이미 보냈어요'}
+                </Text>
+            )}
         </View>
-        <View style={styles.buttonContainer}>
-            <PrimaryButton
-                title="오늘의 메시지 보내기"
-                onPress={onSendMessage}
-                disabled={!canSendToday}
-            />
-        </View>
+        {/* 발신자에게만 보내기 버튼 표시 */}
+        {!isReceiver && (
+            <View style={styles.buttonContainer}>
+                <PrimaryButton
+                    title="오늘의 메시지 보내기"
+                    onPress={onSendMessage}
+                    disabled={!canSendToday}
+                />
+            </View>
+        )}
     </View>
 );
 
@@ -515,4 +542,79 @@ const styles = StyleSheet.create({
         fontFamily: FONTS.medium,
         overflow: 'hidden',
     },
+    // Message Card Styles
+    messageCardContainer: {
+        width: '100%',
+        paddingHorizontal: SPACING.lg,
+    },
+    messageCard: {
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        borderRadius: 20,
+        padding: SPACING.lg,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 5,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,1)',
+    },
+    messageHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: SPACING.sm,
+    },
+    messageTime: {
+        fontSize: FONT_SIZES.xs,
+        color: COLORS.textTertiary,
+        fontFamily: FONTS.regular,
+    },
+    closeButton: {
+        padding: 4,
+    },
+    messageBody: {
+        fontSize: FONT_SIZES.md,
+        color: COLORS.textPrimary,
+        fontFamily: FONTS.medium,
+        lineHeight: 24,
+    },
 });
+
+interface ReceiverHomeProps {
+    message: ReceivedMessage | null;
+    onCloseMessage: () => void;
+}
+
+const ReceiverHomeContent: React.FC<ReceiverHomeProps> = ({ message, onCloseMessage }) => {
+    if (!message) {
+        return <View style={{ flex: 1 }} />; // Complete empty state
+    }
+
+    if (!message) {
+        return <View style={{ flex: 1 }} />; // Complete empty state
+    }
+
+    const date = new Date(message.sentAt); // message.receivedAt -> message.sentAt
+    const timeString = date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+
+    return (
+        <View style={styles.stateContainer}>
+            <View style={styles.centerContent}>
+                <View style={styles.messageCardContainer}>
+                    <View style={styles.messageCard}>
+                        <View style={styles.messageHeader}>
+                            <Text style={styles.messageTime}>{timeString}</Text>
+                            <TouchableOpacity onPress={onCloseMessage} style={styles.closeButton}>
+                                <Feather name="x" size={18} color={COLORS.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={styles.messageBody} numberOfLines={3}>
+                            {message.content}
+                        </Text>
+                    </View>
+                </View>
+            </View>
+        </View>
+    );
+};
