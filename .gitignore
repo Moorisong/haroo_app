@@ -17,3 +17,10 @@ yarn-error.log*
 
 # OS
 .DS_Store
+
+# Firebase (sensitive keys)
+google-services.json
+GoogleService-Info.plist
+firebase-admin-key.json
+*firebase-adminsdk*.json
+packages/server/config/*.json
