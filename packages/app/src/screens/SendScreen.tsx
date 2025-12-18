@@ -58,14 +58,14 @@ export const SendScreen: React.FC = () => {
             return;
         }
 
-        if (!currentMode?.id) {
+        if (!currentMode?._id) {
             Alert.alert('오류', '활성화된 메시지 모드가 없습니다.');
             return;
         }
 
         setIsSending(true);
         try {
-            await sendMessage({ content: message.trim(), modeId: currentMode.id });
+            await sendMessage({ content: message.trim(), modeId: currentMode._id });
             Alert.alert('전송 완료', '메시지가 성공적으로 전송되었습니다.', [
                 { text: '확인', onPress: () => navigation.goBack() }
             ]);
