@@ -3,7 +3,9 @@
 
 import cron from 'node-cron';
 import Message from '../models/Message';
+import MessageMode from '../models/MessageMode';
 import { getToday } from '../utils/testMode';
+import { sendPushNotification, PUSH_MESSAGES } from '../services/pushService';
 
 // 7일을 밀리초로 계산
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -36,6 +38,42 @@ const runCleanup = async () => {
         });
 
         console.log(`[DELETE] ${deleteResult.deletedCount}개 메시지 삭제됨`);
+
+        // 3. 만료된 모드 처리 (MessageMode)
+        // ACTIVE_PERIOD 상태이면서 endDate가 지난 모드 찾기
+        const expiredModes = await MessageMode.find({
+            status: 'ACTIVE_PERIOD',
+            endDate: { $lt: now },
+        });
+
+        if (expiredModes.length > 0) {
+            console.log(`[EXPIRE] ${expiredModes.length}개 모드 만료 처리 시작`);
+
+            for (const mode of expiredModes) {
+                // 상태 변경
+                mode.status = 'EXPIRED';
+                await mode.save();
+
+                // 양쪽 유저에게 푸시 알림 전송
+                // Promise.allSettled로 한 쪽 실패해도 다른 쪽은 보내도록 시도
+                await Promise.allSettled([
+                    sendPushNotification(
+                        mode.initiator.toString(),
+                        PUSH_MESSAGES.MODE_EXPIRED.title,
+                        PUSH_MESSAGES.MODE_EXPIRED.body,
+                        { type: 'MODE_EXPIRED' }
+                    ),
+                    sendPushNotification(
+                        mode.recipient.toString(),
+                        PUSH_MESSAGES.MODE_EXPIRED.title,
+                        PUSH_MESSAGES.MODE_EXPIRED.body,
+                        { type: 'MODE_EXPIRED' }
+                    )
+                ]);
+            }
+            console.log(`[EXPIRE] 모드 만료 처리 완료`);
+        }
+
         console.log(`[${new Date().toISOString()}] 메시지 정리 작업 완료`);
     } catch (error) {
         console.error('메시지 정리 작업 오류:', error);
