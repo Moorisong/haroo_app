@@ -74,7 +74,3 @@ APP_MODE=PROD  # or TEST
 EXPO_PUBLIC_API_URL=http://your-server-url
 EXPO_PUBLIC_KAKAO_REST_API_KEY=your-kakao-key
 ```
-
-## 📄 라이선스
-
-Private - All Rights Reserved

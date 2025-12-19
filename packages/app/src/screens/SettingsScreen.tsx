@@ -9,6 +9,7 @@ import {
     Alert,
     Animated,
     Easing,
+    Linking,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -19,6 +20,7 @@ import { UserIdCard } from '../components/UserIdCard';
 import { getUserProfile, updateUserSettings, getBlockedUsers, unblockUser, BlockedUser } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import Constants from 'expo-constants';
+import { APP_CONSTANTS } from '../constants/app';
 
 export const SettingsScreen: React.FC = () => {
     const navigation = useNavigation<any>();
@@ -225,6 +227,59 @@ export const SettingsScreen: React.FC = () => {
                             </View>
                         </>
                     )}
+
+                    {/* 정보 섹션 */}
+                    <View style={styles.divider} />
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>정보</Text>
+
+                        <TouchableOpacity
+                            style={styles.infoItem}
+                            onPress={() => Linking.openURL(APP_CONSTANTS.TERMS_URL)}
+                        >
+                            <View style={styles.infoItemLeft}>
+                                <Feather name="file-text" size={20} color={COLORS.textSecondary} />
+                                <Text style={styles.infoItemLabel}>이용약관</Text>
+                            </View>
+                            <Feather name="external-link" size={16} color={COLORS.textTertiary} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.infoItem}
+                            onPress={() => Linking.openURL(APP_CONSTANTS.PRIVACY_URL)}
+                        >
+                            <View style={styles.infoItemLeft}>
+                                <Feather name="shield" size={20} color={COLORS.textSecondary} />
+                                <Text style={styles.infoItemLabel}>개인정보처리방침</Text>
+                            </View>
+                            <Feather name="external-link" size={16} color={COLORS.textTertiary} />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.infoItem}
+                            onPress={async () => {
+                                await Clipboard.setStringAsync(APP_CONSTANTS.CONTACT_EMAIL);
+                                showToastMessage('이메일 주소가 복사되었어요.');
+                            }}
+                        >
+                            <View style={styles.infoItemLeft}>
+                                <Feather name="mail" size={20} color={COLORS.textSecondary} />
+                                <Text style={styles.infoItemLabel}>문의하기</Text>
+                            </View>
+                            <View style={styles.infoItemRight}>
+                                <Text style={styles.infoItemValue}>{APP_CONSTANTS.CONTACT_EMAIL}</Text>
+                                <Feather name="copy" size={14} color={COLORS.textTertiary} style={{ marginLeft: 6 }} />
+                            </View>
+                        </TouchableOpacity>
+
+                        <View style={styles.infoItem}>
+                            <View style={styles.infoItemLeft}>
+                                <Feather name="info" size={20} color={COLORS.textSecondary} />
+                                <Text style={styles.infoItemLabel}>앱 버전</Text>
+                            </View>
+                            <Text style={styles.infoItemValue}>{Constants.expoConfig?.version || '1.0.0'}</Text>
+                        </View>
+                    </View>
 
                     {/* 로그아웃 버튼 - 맨 아래 눈에 안띄게 */}
                     <View style={styles.logoutSection}>
@@ -476,6 +531,34 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.lg,
     },
     logoutText: {
+        fontSize: FONT_SIZES.sm,
+        fontFamily: FONTS.regular,
+        color: COLORS.textTertiary,
+    },
+    // 정보 섹션 스타일
+    infoItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: SPACING.md,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.divider,
+    },
+    infoItemLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.sm,
+    },
+    infoItemRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    infoItemLabel: {
+        fontSize: FONT_SIZES.md,
+        fontFamily: FONTS.regular,
+        color: COLORS.textPrimary,
+    },
+    infoItemValue: {
         fontSize: FONT_SIZES.sm,
         fontFamily: FONTS.regular,
         color: COLORS.textTertiary,
