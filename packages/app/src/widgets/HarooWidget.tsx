@@ -70,16 +70,16 @@ function SmallWidget({ message, senderName, status, config = DEFAULT_WIDGET_CONF
         <FlexWidget
             style={{
                 flex: 1,
-                padding: 10,
+                flexDirection: 'row',
                 backgroundColor: applyOpacity(theme.background, config.opacity) as ColorProp,
                 borderRadius: 14,
             }}
             clickAction="OPEN_APP"
         >
-            {/* 헤더 + 새로고침 */}
-            <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                    {/* 하루 배지 */}
+            {/* 왼쪽 컨텐츠 영역 */}
+            <FlexWidget style={{ flex: 1, padding: 10 }}>
+                {/* 헤더 */}
+                <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <FlexWidget
                         style={{
                             backgroundColor: badgeColor as ColorProp,
@@ -99,39 +99,41 @@ function SmallWidget({ message, senderName, status, config = DEFAULT_WIDGET_CONF
                     </FlexWidget>
                     {status === 'ACTIVE' && senderName && (
                         <TextWidget
-                            text={` · ${senderName}`}
+                            text={senderName}
                             style={{
                                 fontSize: fontSize.hint,
                                 fontFamily: 'sans-serif',
                                 color: theme.textSecondary as ColorProp,
+                                marginLeft: 6,
                             }}
                         />
                     )}
                 </FlexWidget>
-                {/* 새로고침 - 완전 우측 */}
-                <FlexWidget
-                    style={{ paddingLeft: 8 }}
-                    clickAction="OPEN_APP"
-                    clickActionData={{ action: 'refresh' }}
-                >
-                    <TextWidget
-                        text="↻"
-                        style={{
-                            fontSize: 16,
-                            color: DESIGN_COLORS.refreshIcon as ColorProp,
-                        }}
-                    />
-                </FlexWidget>
+                <TextWidget
+                    text={getDisplayText()}
+                    style={{
+                        fontSize: fontSize.message,
+                        fontFamily: 'sans-serif',
+                        color: (status === 'ACTIVE' ? fontColor : theme.textSecondary) as ColorProp,
+                        marginTop: 4,
+                    }}
+                />
             </FlexWidget>
-            <TextWidget
-                text={getDisplayText()}
-                style={{
-                    fontSize: fontSize.message,
-                    fontFamily: 'sans-serif',
-                    color: (status === 'ACTIVE' ? fontColor : theme.textSecondary) as ColorProp,
-                    marginTop: 4,
-                }}
-            />
+
+            {/* 새로고침 - 완전 우측 끝 */}
+            <FlexWidget
+                style={{ justifyContent: 'flex-start', paddingTop: 4, paddingHorizontal: 10 }}
+                clickAction="OPEN_APP"
+                clickActionData={{ action: 'refresh' }}
+            >
+                <TextWidget
+                    text="↻"
+                    style={{
+                        fontSize: 16,
+                        color: DESIGN_COLORS.refreshIcon as ColorProp,
+                    }}
+                />
+            </FlexWidget>
         </FlexWidget>
     );
 }
@@ -165,23 +167,22 @@ function MediumWidget({ message, senderName, status, today, config = DEFAULT_WID
             text: '오늘의 메시지가 도착하면 알려드릴게요',
         };
     };
-
     const content = getDisplayContent();
 
     return (
         <FlexWidget
             style={{
                 flex: 1,
-                padding: 14,
+                flexDirection: 'row',
                 backgroundColor: applyOpacity(theme.background, config.opacity) as ColorProp,
                 borderRadius: 20,
             }}
             clickAction="OPEN_APP"
         >
-            {/* 상단 헤더 */}
-            <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                    {/* 하루 배지 */}
+            {/* 왼쪽 메인 컨텐츠 영역 - flex:1로 확장 */}
+            <FlexWidget style={{ flex: 1, padding: 14 }}>
+                {/* 상단 헤더 */}
+                <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
                     <FlexWidget
                         style={{
                             backgroundColor: badgeColor as ColorProp,
@@ -209,81 +210,79 @@ function MediumWidget({ message, senderName, status, today, config = DEFAULT_WID
                         }}
                     />
                 </FlexWidget>
-                {/* 새로고침 버튼 - 완전 우측 */}
-                <FlexWidget
-                    style={{ paddingLeft: 12 }}
-                    clickAction="OPEN_APP"
-                    clickActionData={{ action: 'refresh' }}
-                >
-                    <TextWidget
-                        text="↻"
-                        style={{
-                            fontSize: 22,
-                            fontFamily: 'sans-serif',
-                            color: DESIGN_COLORS.refreshIcon as ColorProp,
-                        }}
-                    />
+
+                {/* 메인 컨텐츠 영역 */}
+                <FlexWidget style={{ flex: 1, flexDirection: 'row' }}>
+                    {config.showEmoji && (
+                        <FlexWidget
+                            style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 12,
+                                backgroundColor: theme.accentLight as ColorProp,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                marginRight: 10,
+                            }}
+                        >
+                            <TextWidget
+                                text={content.emoji}
+                                style={{
+                                    fontSize: 20,
+                                }}
+                            />
+                        </FlexWidget>
+                    )}
+
+                    <FlexWidget style={{ flex: 1, justifyContent: 'center' }}>
+                        {status !== 'ACTIVE' && (
+                            <TextWidget
+                                text={content.title}
+                                style={{
+                                    fontSize: fontSize.hint,
+                                    fontFamily: 'sans-serif-medium',
+                                    color: theme.textSecondary as ColorProp,
+                                    marginBottom: 2,
+                                }}
+                            />
+                        )}
+                        <TextWidget
+                            text={content.text}
+                            style={{
+                                fontSize: fontSize.message,
+                                fontFamily: 'sans-serif',
+                                color: (status === 'ACTIVE' ? fontColor : theme.textSecondary) as ColorProp,
+                            }}
+                        />
+                        {status === 'ACTIVE' && senderName && (
+                            <TextWidget
+                                text={config.showEmoji ? `from. ${senderName} ♡` : `from. ${senderName}`}
+                                style={{
+                                    fontSize: fontSize.hint,
+                                    fontFamily: 'sans-serif-medium',
+                                    color: theme.textSecondary as ColorProp,
+                                    marginTop: 10,
+                                }}
+                            />
+                        )}
+                    </FlexWidget>
                 </FlexWidget>
             </FlexWidget>
 
-            {/* 메인 컨텐츠 영역 */}
-            <FlexWidget style={{ flex: 1, flexDirection: 'row' }}>
-                {/* 이모지 영역 */}
-                {config.showEmoji && (
-                    <FlexWidget
-                        style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 12,
-                            backgroundColor: theme.accentLight as ColorProp,
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            marginRight: 10,
-                        }}
-                    >
-                        <TextWidget
-                            text={content.emoji}
-                            style={{
-                                fontSize: 20,
-                            }}
-                        />
-                    </FlexWidget>
-                )}
-
-                {/* 텍스트 영역 */}
-                <FlexWidget style={{ flex: 1, justifyContent: 'center' }}>
-                    {status !== 'ACTIVE' && (
-                        <TextWidget
-                            text={content.title}
-                            style={{
-                                fontSize: fontSize.hint,
-                                fontFamily: 'sans-serif-medium',
-                                color: theme.textSecondary as ColorProp,
-                                marginBottom: 2,
-                            }}
-                        />
-                    )}
-                    <TextWidget
-                        text={content.text}
-                        style={{
-                            fontSize: fontSize.message,
-                            fontFamily: 'sans-serif',
-                            color: (status === 'ACTIVE' ? fontColor : theme.textSecondary) as ColorProp,
-                        }}
-                    />
-                    {/* from을 메시지 아래로 - 여백 추가 */}
-                    {status === 'ACTIVE' && senderName && (
-                        <TextWidget
-                            text={config.showEmoji ? `from. ${senderName} ♡` : `from. ${senderName}`}
-                            style={{
-                                fontSize: fontSize.hint,
-                                fontFamily: 'sans-serif-medium',
-                                color: DESIGN_COLORS.fromText as ColorProp,
-                                marginTop: 10,
-                            }}
-                        />
-                    )}
-                </FlexWidget>
+            {/* 새로고침 - 완전 우측 끝 (소형과 동일 구조) */}
+            <FlexWidget
+                style={{ justifyContent: 'flex-start', paddingTop: 6, paddingHorizontal: 12 }}
+                clickAction="OPEN_APP"
+                clickActionData={{ action: 'refresh' }}
+            >
+                <TextWidget
+                    text="↻"
+                    style={{
+                        fontSize: 22,
+                        fontFamily: 'sans-serif',
+                        color: DESIGN_COLORS.refreshIcon as ColorProp,
+                    }}
+                />
             </FlexWidget>
         </FlexWidget>
     );

@@ -151,6 +151,7 @@ export function WidgetConfigScreen({ widgetInfo, setResult, renderWidget }: Widg
     ];
 
     const opacityOptions = [
+        { value: 0, label: '0%' },
         { value: 0.5, label: '50%' },
         { value: 0.7, label: '70%' },
         { value: 0.85, label: '85%' },

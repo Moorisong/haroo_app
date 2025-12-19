@@ -49,10 +49,10 @@
               "name": "HarooWidgetMedium",
               "label": "하루 (중)",
               "minWidth": "250dp",
-              "minHeight": "110dp",
+              "minHeight": "100dp",
               "description": "오늘 받은 메시지를 확인",
               "updatePeriodMillis": 1800000,
-              "resizeMode": "horizontal|vertical",
+              "resizeMode": "none",
               "widgetFeatures": "reconfigurable|configuration_optional"
             }
           ]
