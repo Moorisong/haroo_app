@@ -36,13 +36,24 @@
         {
           "widgets": [
             {
-              "name": "HarooWidget",
-              "label": "하루",
-              "minWidth": "320dp",
-              "minHeight": "120dp",
-              "description": "오늘 받은 메시지를 확인하세요",
+              "name": "HarooWidgetSmall",
+              "label": "하루 (소)",
+              "minWidth": "110dp",
+              "minHeight": "40dp",
+              "description": "오늘 받은 메시지를 간략히 확인",
               "updatePeriodMillis": 1800000,
-              "resizeMode": "horizontal|vertical"
+              "resizeMode": "none",
+              "widgetFeatures": "reconfigurable|configuration_optional"
+            },
+            {
+              "name": "HarooWidgetMedium",
+              "label": "하루 (중)",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "description": "오늘 받은 메시지를 확인",
+              "updatePeriodMillis": 1800000,
+              "resizeMode": "horizontal|vertical",
+              "widgetFeatures": "reconfigurable|configuration_optional"
             }
           ]
         }

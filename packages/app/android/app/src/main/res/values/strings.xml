@@ -2,5 +2,6 @@
   <string name="app_name">하루</string>
   <string name="expo_splash_screen_resize_mode" translatable="false">contain</string>
   <string name="expo_splash_screen_status_bar_translucent" translatable="false">false</string>
-  <string name="widget_haroowidget_description" translatable="false">오늘 받은 메시지를 확인하세요</string>
+  <string name="widget_haroowidgetsmall_description" translatable="false">오늘 받은 메시지를 간략히 확인</string>
+  <string name="widget_haroowidgetmedium_description" translatable="false">오늘 받은 메시지를 확인</string>
 </resources>

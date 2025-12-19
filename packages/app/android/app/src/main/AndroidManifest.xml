@@ -28,12 +28,24 @@
         <data android:scheme="haroo"/>
       </intent-filter>
     </activity>
-    <receiver android:name=".widget.HarooWidget" android:exported="false" android:label="하루">
+    <activity android:name=".WidgetConfigurationActivity" android:exported="true">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE"/>
+      </intent-filter>
+    </activity>
+    <receiver android:name=".widget.HarooWidgetSmall" android:exported="false" android:label="하루 (소)">
       <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
         <action android:name="com.haroo.app.WIDGET_CLICK"/>
       </intent-filter>
-      <meta-data android:name="android.appwidget.provider" android:resource="@xml/widgetprovider_haroowidget"/>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/widgetprovider_haroowidgetsmall"/>
+    </receiver>
+    <receiver android:name=".widget.HarooWidgetMedium" android:exported="false" android:label="하루 (중)">
+      <intent-filter>
+        <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
+        <action android:name="com.haroo.app.WIDGET_CLICK"/>
+      </intent-filter>
+      <meta-data android:name="android.appwidget.provider" android:resource="@xml/widgetprovider_haroowidgetmedium"/>
     </receiver>
   </application>
 </manifest>

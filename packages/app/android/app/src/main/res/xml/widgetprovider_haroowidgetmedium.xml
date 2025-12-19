@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:minWidth="320dp"
-    android:minHeight="120dp"
+    android:minWidth="250dp"
+    android:minHeight="110dp"
 
 
 
@@ -9,12 +9,13 @@
 
     android:resizeMode="horizontal|vertical"
 
-    android:description="@string/widget_haroowidget_description"
+    android:description="@string/widget_haroowidgetmedium_description"
 
     android:initialLayout="@layout/rn_widget"
 
 
-
+    android:configure="com.haroo.app.WidgetConfigurationActivity"
+    android:widgetFeatures="reconfigurable|configuration_optional"
 
     android:updatePeriodMillis="1800000"
     android:widgetCategory="home_screen">
