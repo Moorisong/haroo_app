@@ -1,7 +1,8 @@
 import React from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { WidgetTaskHandlerProps } from 'react-native-android-widget';
-import { HarooWidget } from './HarooWidget';
+import { HarooWidget, WidgetSize } from './HarooWidget';
+import { loadWidgetConfig, WidgetConfig, DEFAULT_WIDGET_CONFIG } from './WidgetConfigScreen';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -58,16 +59,31 @@ function formatToday(): string {
     return `${month}월 ${day}일 ${weekDay}요일`;
 }
 
+// 위젯 이름에서 크기 추출
+function getWidgetSize(widgetName: string): WidgetSize {
+    if (widgetName === 'HarooWidgetSmall') return 'small';
+    return 'medium'; // HarooWidgetMedium or default
+}
+
 export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
     const widgetInfo = props.widgetInfo;
     const Widget = props.renderWidget;
 
-    if (widgetInfo.widgetName !== 'HarooWidget') {
+    // 지원하는 위젯인지 확인
+    const supportedWidgets = ['HarooWidgetSmall', 'HarooWidgetMedium'];
+    if (!supportedWidgets.includes(widgetInfo.widgetName)) {
         return;
     }
 
-    const { status, message, senderName } = await fetchLatestMessage();
+    // 데이터 및 설정 로드
+    const [messageData, config] = await Promise.all([
+        fetchLatestMessage(),
+        loadWidgetConfig(),
+    ]);
+
+    const { status, message, senderName } = messageData;
     const today = formatToday();
+    const size = getWidgetSize(widgetInfo.widgetName);
 
     Widget(
         <HarooWidget
@@ -75,6 +91,9 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
             senderName={senderName}
             status={status}
             today={today}
+            size={size}
+            config={config}
         />
     );
 }
+
