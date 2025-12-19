@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { advanceDay, resetDate, getOffset, isTestMode, getToday } from '../utils/testMode';
+import { advanceDay, advanceHours, resetDate, getOffset, isTestMode, getToday } from '../utils/testMode';
 import User from '../models/User';
 import MessageMode from '../models/MessageMode';
 import Message from '../models/Message';
@@ -36,6 +36,16 @@ router.post('/advance-day', async (req: Request, res: Response) => {
     await runCleanup();
 
     res.json({ message: `Advanced ${days || 1} day(s)`, currentOffset: getOffset(), currentTestDate: getToday() });
+});
+
+router.post('/advance-hours', async (req: Request, res: Response) => {
+    const { hours } = req.body;
+    advanceHours(hours || 12);
+
+    // Trigger cleanup to check reminder and expiry
+    await runCleanup();
+
+    res.json({ message: `Advanced ${hours || 12} hour(s)`, currentOffset: getOffset(), currentTestDate: getToday() });
 });
 
 
@@ -147,12 +157,17 @@ router.post('/create-connection', protect, async (req: Request, res: Response) =
             userId: { $in: [user._id, testUser._id] }
         });
 
-        // Create PENDING connection
+        // Create PENDING connection with expiry for testing
+        const now = getToday();
+        const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // +24h
+
         const newMode = await MessageMode.create({
             initiator: user._id,
             recipient: testUser._id,
             durationDays: 1, // Default, can be updated later
-            status: 'PENDING'
+            status: 'PENDING',
+            requestedAt: now,
+            expiresAt: expiresAt,
         });
 
         // [Verified] Trigger Push: Simulate "Mode Requested" -> Notify Test User (Recipient)

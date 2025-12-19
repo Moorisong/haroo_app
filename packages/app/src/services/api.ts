@@ -194,6 +194,11 @@ export const advanceDay = async (days: number = 1) => {
     return response.data;
 };
 
+export const advanceHours = async (hours: number = 12) => {
+    const response = await api.post('/test-tools/advance-hours', { hours });
+    return response.data;
+};
+
 export const resetTestState = async () => {
     const response = await api.post('/test-tools/reset');
     return response.data;

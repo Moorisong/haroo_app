@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { advanceDay, resetTestState, getTestStatus, createTestUser, createTestConnection, forceActivateMessageMode, forceExpireMessageMode, getTestMessageLogs, getTestPushLogs } from '../services/api';
+import { advanceDay, advanceHours, resetTestState, getTestStatus, createTestUser, createTestConnection, forceActivateMessageMode, forceExpireMessageMode, getTestMessageLogs, getTestPushLogs } from '../services/api';
 
 export const TestToolsScreen = () => {
     const insets = useSafeAreaInsets();
@@ -57,6 +57,13 @@ export const TestToolsScreen = () => {
 
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Time Travel</Text>
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => handleAction(() => advanceHours(12), 'Advanced 12 Hours')}
+                    disabled={loading}
+                >
+                    <Text style={styles.buttonText}>+12 Hours (Reminder)</Text>
+                </TouchableOpacity>
                 <TouchableOpacity
                     style={styles.button}
                     onPress={() => handleAction(() => advanceDay(1), 'Advanced 1 Day')}
