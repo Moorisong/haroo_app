@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Image, Dimensions, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Image, Dimensions, Text, TouchableOpacity, Alert, ActivityIndicator, Linking } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
 import { BubbleBackground } from '../components/BubbleBackground';
 import { COLORS, FONTS, SPACING } from '../constants/theme';
+import { APP_CONSTANTS } from '../constants/app';
 import { useAuth } from '../context/AuthContext';
 
 const { width } = Dimensions.get('window');
@@ -92,6 +93,25 @@ export const LandingScreen: React.FC = () => {
                         </TouchableOpacity>
                     )}
                 </View>
+                <View style={styles.consentContainer}>
+                    <Text style={styles.consentText}>
+                        계속 진행하면{' '}
+                        <Text
+                            style={styles.consentLink}
+                            onPress={() => Linking.openURL(APP_CONSTANTS.TERMS_URL)}
+                        >
+                            이용약관
+                        </Text>
+                        {' '}및{' '}
+                        <Text
+                            style={styles.consentLink}
+                            onPress={() => Linking.openURL(APP_CONSTANTS.PRIVACY_URL)}
+                        >
+                            개인정보처리방침
+                        </Text>
+                        에 동의한 것으로 간주합니다.
+                    </Text>
+                </View>
             </View>
         </View>
     );
@@ -145,5 +165,20 @@ const styles = StyleSheet.create({
         fontFamily: FONTS.bold,
         fontSize: 16,
         color: '#000000',
+    },
+    consentContainer: {
+        marginTop: 24,
+        paddingHorizontal: 20,
+    },
+    consentText: {
+        fontFamily: FONTS.regular,
+        fontSize: 12,
+        color: COLORS.textTertiary,
+        textAlign: 'center',
+        lineHeight: 18,
+    },
+    consentLink: {
+        color: COLORS.accent,
+        textDecorationLine: 'underline',
     },
 });
