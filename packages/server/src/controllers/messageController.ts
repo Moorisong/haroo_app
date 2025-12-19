@@ -87,6 +87,7 @@ export const sendMessage = async (req: Request, res: Response, next: NextFunctio
         const recipientId = mode.initiator.toString() === senderId.toString()
             ? mode.recipient.toString()
             : mode.initiator.toString();
+
         sendMessageReceivedPush(recipientId);
 
         res.status(201).json(message);

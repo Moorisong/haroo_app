@@ -4,6 +4,7 @@ import User from '../models/User';
 import MessageMode from '../models/MessageMode';
 import Message from '../models/Message';
 import { protect } from '../middlewares/authMiddleware';
+import { sendModeAcceptedPush, sendPushNotification, PUSH_MESSAGES, sendModeRequestedPush } from '../services/pushService';
 
 const router = express.Router();
 
@@ -31,6 +32,10 @@ router.post('/advance-day', (req: Request, res: Response) => {
     res.json({ message: `Advanced ${days || 1} day(s)`, currentOffset: getOffset(), currentTestDate: getToday() });
 });
 
+import PushLog from '../models/PushLog';
+
+// ... existing code ...
+
 router.post('/reset', async (req: Request, res: Response) => {
     resetDate();
 
@@ -39,9 +44,7 @@ router.post('/reset', async (req: Request, res: Response) => {
     const testUser = await User.findOne({ kakaoId: TEST_USER_ID });
 
     if (testUser) {
-        // Find modes involving test user (recipient: testUser means current user -> testUser)
-        // We also want to delete modes where current user is involved if we want "Reset Connection"
-        // But the requirement says "Reset Data and State" which implies global cleanup for test context
+        // ... (existing mode removal logging)
 
         const modes = await MessageMode.find({
             $or: [{ recipient: testUser._id }, { initiator: testUser._id }]
@@ -49,14 +52,46 @@ router.post('/reset', async (req: Request, res: Response) => {
 
         const modeIds = modes.map(m => m._id);
 
-        // Delete messages in those modes
         await Message.deleteMany({ modeId: { $in: modeIds } });
-
-        // Delete modes
         await MessageMode.deleteMany({ _id: { $in: modeIds } });
+
+        // [NEW] Delete Push Logs for test user
+        await PushLog.deleteMany({ userId: testUser._id.toString() });
     }
 
     res.json({ message: 'Test state and data reset', currentOffset: getOffset(), currentTestDate: getToday() });
+});
+
+// ... existing code ...
+
+router.get('/push-logs', protect, async (req: Request, res: Response) => {
+    try {
+        const TEST_USER_ID = 'TEST_RECEIVER';
+        const testUser = await User.findOne({ kakaoId: TEST_USER_ID });
+
+        if (!testUser) {
+            return res.status(404).json({ error: 'Test user not found.' });
+        }
+
+        // Get latest push log for EITHER test receiver OR current user
+        // This allows viewing "Accepted" pushes (sent to me) and "Received" pushes (sent to test user)
+        const latestPush = await PushLog.findOne({
+            userId: { $in: [testUser._id.toString(), req.user._id.toString()] }
+        }).sort({ triggeredAt: -1 });
+
+        if (!latestPush) {
+            return res.json({ log: null });
+        }
+
+        res.json({
+            title: latestPush.title,
+            body: latestPush.body,
+            triggeredAt: latestPush.triggeredAt
+        });
+
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to get push logs', details: error });
+    }
 });
 
 router.post('/create-test-user', async (req: Request, res: Response) => {
@@ -109,6 +144,9 @@ router.post('/create-connection', protect, async (req: Request, res: Response) =
             status: 'PENDING'
         });
 
+        // [Verified] Trigger Push: Simulate "Mode Requested" -> Notify Test User (Recipient)
+        await sendModeRequestedPush(testUser._id.toString());
+
         res.json({ message: 'Created PENDING connection', mode: newMode });
     } catch (error) {
         res.status(500).json({ error: 'Failed to create connection', details: error });
@@ -146,7 +184,20 @@ router.post('/force-activate', protect, async (req: Request, res: Response) => {
         mode.endDate = endDate;
         if (durationDays) mode.durationDays = durationDays;
 
+
+
+        // ... existing code ...
+
         await mode.save();
+
+        // [Verified] Trigger Push: Simulate "Receiver Accepted" -> Notify Me (Initiator)
+        // If I am initiator, send to me.
+        // If I am recipient (rare in test flow), send to initiator (Test User?).
+        // Usually Test User is Recipient. So I am Initiator.
+        if (mode.initiator.toString() === user._id.toString()) {
+            await sendModeAcceptedPush(user._id.toString());
+        }
+
         res.json({ message: 'Force activated connection', mode });
     } catch (error) {
         res.status(500).json({ error: 'Failed to force activate', details: error });
@@ -156,6 +207,7 @@ router.post('/force-activate', protect, async (req: Request, res: Response) => {
 router.post('/force-expire', protect, async (req: Request, res: Response) => {
     try {
         const user = req.user;
+        // ... (existing code to find mode) ...
         const TEST_USER_ID = 'TEST_RECEIVER';
         const testUser = await User.findOne({ kakaoId: TEST_USER_ID });
 
@@ -177,6 +229,16 @@ router.post('/force-expire', protect, async (req: Request, res: Response) => {
         mode.status = 'EXPIRED';
         // We don't change dates, just status
         await mode.save();
+
+        // [Verified] Trigger Push: Simulate "System Expired" -> Notify Me
+        // Send generic expiry push to current user
+        await sendPushNotification(
+            user._id.toString(),
+            PUSH_MESSAGES.MODE_EXPIRED.title,
+            PUSH_MESSAGES.MODE_EXPIRED.body,
+            { type: 'MODE_EXPIRED' }
+        );
+
         res.json({ message: 'Force expired connection', mode });
     } catch (error) {
         res.status(500).json({ error: 'Failed to force expire', details: error });

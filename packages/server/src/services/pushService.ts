@@ -46,6 +46,11 @@ export const PUSH_MESSAGES = {
     },
 };
 
+import { isTestMode, getToday } from '../utils/testMode';
+import PushLog from '../models/PushLog';
+
+// ... existing code ...
+
 // 푸시 알림 전송 함수
 export const sendPushNotification = async (
     userId: string,
@@ -54,6 +59,18 @@ export const sendPushNotification = async (
     data?: Record<string, string>
 ): Promise<boolean> => {
     try {
+        // [TEST MODE] Mock Push
+        if (isTestMode) {
+            await PushLog.create({
+                userId: userId.toString(),
+                title,
+                body,
+                data,
+                triggeredAt: getToday() // Use test-aware date
+            });
+            return true;
+        }
+
         const user = await User.findById(userId);
         if (!user?.fcmToken) {
             console.log(`No FCM token for user ${userId}`);
