@@ -95,7 +95,7 @@ export const LandingScreen: React.FC = () => {
                 </View>
                 <View style={styles.consentContainer}>
                     <Text style={styles.consentText}>
-                        계속 진행하면{' '}
+                        시작하시면{' '}
                         <Text
                             style={styles.consentLink}
                             onPress={() => Linking.openURL(APP_CONSTANTS.TERMS_URL)}
@@ -109,7 +109,7 @@ export const LandingScreen: React.FC = () => {
                         >
                             개인정보처리방침
                         </Text>
-                        에 동의한 것으로 간주합니다.
+                        에 동의하게 돼요.
                     </Text>
                 </View>
             </View>
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     },
     consentText: {
         fontFamily: FONTS.regular,
-        fontSize: 12,
+        fontSize: 11,
         color: COLORS.textTertiary,
         textAlign: 'center',
         lineHeight: 18,
