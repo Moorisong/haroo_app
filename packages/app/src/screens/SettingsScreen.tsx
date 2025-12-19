@@ -18,6 +18,7 @@ import { BubbleBackground } from '../components/BubbleBackground';
 import { UserIdCard } from '../components/UserIdCard';
 import { getUserProfile, updateUserSettings, getBlockedUsers, unblockUser, BlockedUser } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import Constants from 'expo-constants';
 
 export const SettingsScreen: React.FC = () => {
     const navigation = useNavigation<any>();
@@ -195,6 +196,32 @@ export const SettingsScreen: React.FC = () => {
                                         </View>
                                     ))}
                                 </View>
+                            </View>
+                        </>
+                    )}
+
+                    {/* [TEST MODE] Developer Menu */}
+                    {Constants.expoConfig?.extra?.APP_MODE === 'TEST' && (
+                        <>
+                            <View style={styles.divider} />
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Developer</Text>
+                                <TouchableOpacity
+                                    style={styles.actionCard}
+                                    onPress={() => navigation.navigate('TestTools')}
+                                    activeOpacity={0.8}
+                                >
+                                    <View style={styles.optionContent}>
+                                        <Feather
+                                            name="tool"
+                                            size={24}
+                                            color="#607D8B"
+                                            style={styles.optionIcon}
+                                        />
+                                        <Text style={styles.actionLabel}>Test Tools</Text>
+                                    </View>
+                                    <Feather name="chevron-right" size={20} color={COLORS.textTertiary} />
+                                </TouchableOpacity>
                             </View>
                         </>
                     )}

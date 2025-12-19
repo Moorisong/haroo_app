@@ -15,10 +15,12 @@ import {
 } from '@expo-google-fonts/nanum-gothic';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { HomeScreen, LandingScreen, RequestScreen, SendScreen, ReceiveScreen, SettingsScreen } from './src/screens';
+import { HomeScreen, LandingScreen, RequestScreen, SendScreen, ReceiveScreen, SettingsScreen, TestToolsScreen } from './src/screens';
 import { registerForPushNotificationsAsync, setupNotificationListeners } from './src/services/notifications';
+import Constants from 'expo-constants';
 
 const Stack = createStackNavigator();
+const IS_TEST = Constants.expoConfig?.extra?.APP_MODE === 'TEST';
 
 const AppStack = () => {
   return (
@@ -28,6 +30,7 @@ const AppStack = () => {
       <Stack.Screen name="Send" component={SendScreen} />
       <Stack.Screen name="Receive" component={ReceiveScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      {IS_TEST && <Stack.Screen name="TestTools" component={TestToolsScreen} />}
     </Stack.Navigator>
   );
 };

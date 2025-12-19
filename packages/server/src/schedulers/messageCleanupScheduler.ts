@@ -3,6 +3,7 @@
 
 import cron from 'node-cron';
 import Message from '../models/Message';
+import { getToday } from '../utils/testMode';
 
 // 7일을 밀리초로 계산
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -10,9 +11,9 @@ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 // 메시지 정리 작업 실행
 const runCleanup = async () => {
     try {
-        console.log(`[${new Date().toISOString()}] 메시지 정리 작업 시작`);
+        const now = getToday(); // Use test-aware date
+        console.log(`[${now.toISOString()}] 메시지 정리 작업 시작`);
 
-        const now = new Date();
         const sevenDaysAgo = new Date(now.getTime() - SEVEN_DAYS_MS);
 
         // 1. 만료된 ACTIVE 메시지 → EXPIRED 상태로 변경

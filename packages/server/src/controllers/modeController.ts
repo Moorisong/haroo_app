@@ -3,6 +3,7 @@ import User from '../models/User';
 import MessageMode from '../models/MessageMode';
 import Message from '../models/Message';
 import { sendModeRequestedPush, sendModeAcceptedPush, sendModeRejectedPush } from '../services/pushService';
+import { isTestMode, getToday } from '../utils/testMode';
 
 // 유틸: 유저가 이미 활성 상태의 모드(PENDING or ACTIVE)가 있는지 확인
 const hasActiveMode = async (userId: string, excludeModeId?: string) => {
@@ -76,16 +77,33 @@ export const requestMode = async (req: Request, res: Response, next: NextFunctio
             throw new Error('The recipient is currently busy with another mode');
         }
 
-        // 4. 모드 생성 (PENDING)
+        let status = 'PENDING';
+        let startDate;
+        let endDate;
+
+        // [TEST MODE] Auto-accept for test receiver
+        if (isTestMode && recipient.kakaoId === 'TEST_RECEIVER') {
+            status = 'ACTIVE_PERIOD';
+            startDate = getToday();
+            endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + durationDays);
+            console.log(`[TEST MODE] Auto-accepting mode for ${recipient.nickname}`);
+        }
+
+        // 4. 모드 생성
         const newMode = await MessageMode.create({
             initiator: initiator._id,
             recipient: recipient._id,
             durationDays,
-            status: 'PENDING',
+            status,
+            startDate,
+            endDate,
         });
 
-        // 5. 수신자에게 푸시 알림 전송
-        sendModeRequestedPush(recipient._id.toString());
+        // 5. 수신자에게 푸시 알림 전송 (TEST 모드여도 알림은 갈 수 있음, or skip logic provided elsewhere)
+        if (status === 'PENDING') {
+            sendModeRequestedPush(recipient._id.toString());
+        }
 
         res.status(201).json(newMode);
     } catch (error) {
@@ -126,12 +144,8 @@ export const acceptMode = async (req: Request, res: Response, next: NextFunction
             throw new Error('You already have an active mode');
         }
 
-        // initiator 상태도 확인 필요 (상대방이 그 사이 딴 짓을 했을 수도...)
-        // 엄격하게 하려면 여기서 initiator status도 체크해야 함.
-        // 일단 패스하거나 추후 추가.
-
-        // 상태 변경
-        const startDate = new Date();
+        // startDate를 getToday() (Time Travel 지원)로 설정
+        const startDate = getToday();
         const endDate = new Date(startDate);
         endDate.setDate(startDate.getDate() + mode.durationDays);
 
@@ -257,9 +271,10 @@ export const getCurrentMode = async (req: Request, res: Response, next: NextFunc
 
         let canSendToday = false;
         if (mode.status === 'ACTIVE_PERIOD') {
-            const startOfDay = new Date();
+            // Use getToday() for Time Travel support
+            const startOfDay = getToday();
             startOfDay.setHours(0, 0, 0, 0);
-            const endOfDay = new Date();
+            const endOfDay = getToday();
             endOfDay.setHours(23, 59, 59, 999);
 
             const messageSentToday = await Message.findOne({

@@ -187,3 +187,44 @@ export const unblockUser = async (targetHashId: string): Promise<any> => {
         throw error;
     }
 };
+
+// Test Tools API
+export const advanceDay = async (days: number = 1) => {
+    const response = await api.post('/test-tools/advance-day', { days });
+    return response.data;
+};
+
+export const resetTestState = async () => {
+    const response = await api.post('/test-tools/reset');
+    return response.data;
+};
+
+export const getTestStatus = async () => {
+    const response = await api.get('/test-tools/status');
+    return response.data;
+};
+
+export const createTestUser = async () => {
+    const response = await api.post('/test-tools/create-test-user');
+    return response.data;
+};
+
+export const createTestConnection = async () => {
+    const response = await api.post('/test-tools/create-connection');
+    return response.data;
+};
+
+export const forceActivateMessageMode = async (durationDays: 1 | 3) => {
+    const response = await api.post('/test-tools/force-activate', { durationDays });
+    return response.data;
+};
+
+export const forceExpireMessageMode = async () => {
+    const response = await api.post('/test-tools/force-expire');
+    return response.data;
+};
+
+export const getTestMessageLogs = async () => {
+    const response = await api.get('/test-tools/message-logs');
+    return response.data;
+};

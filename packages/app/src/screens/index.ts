@@ -4,3 +4,4 @@ export * from './RequestScreen';
 export * from './SendScreen';
 export * from './ReceiveScreen';
 export * from './SettingsScreen';
+export * from './TestToolsScreen';

@@ -28,6 +28,13 @@ app.use('/users', userRoutes);
 app.use('/modes', modeRoutes);
 app.use('/messages', messageRoutes);
 
+import testToolsRoutes from './routes/testTools';
+import { isTestMode } from './utils/testMode';
+
+if (isTestMode) {
+    app.use('/test-tools', testToolsRoutes);
+}
+
 // Basic Route
 app.get('/', (req, res) => {
     res.send('Haroo Server is running!');

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import Message from '../models/Message';
 import MessageMode from '../models/MessageMode';
 import { sendMessageReceivedPush } from '../services/pushService';
+import { getToday } from '../utils/testMode';
 
 // 24시간을 밀리초로 계산
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
@@ -43,15 +44,15 @@ export const sendMessage = async (req: Request, res: Response, next: NextFunctio
         }
 
         // 4. 기간 만료 검증 (여기서 잡거나 별도 배치로 잡거나. 안전을 위해 이중 장치)
-        if (mode.endDate && new Date() > mode.endDate) {
+        if (mode.endDate && getToday() > mode.endDate) {
             res.status(400);
             throw new Error('Message Mode has expired');
         }
 
         // 5. 하루 1회 제한 확인 (오늘 날짜 00:00:00 ~ 23:59:59)
-        const startOfDay = new Date();
+        const startOfDay = getToday();
         startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date();
+        const endOfDay = getToday();
         endOfDay.setHours(23, 59, 59, 999);
 
         const existMessage = await Message.findOne({
@@ -69,7 +70,7 @@ export const sendMessage = async (req: Request, res: Response, next: NextFunctio
         }
 
         // 6. 메시지 생성 (expiresAt = sentAt + 24시간)
-        const sentAt = new Date();
+        const sentAt = getToday();
         const expiresAt = new Date(sentAt.getTime() + TWENTY_FOUR_HOURS_MS);
 
         const message = await Message.create({
@@ -100,7 +101,7 @@ export const sendMessage = async (req: Request, res: Response, next: NextFunctio
 export const getTodayMessage = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const userId = req.user._id;
-        const now = new Date();
+        const now = getToday();
 
         // 1. 현재 활성 모드 찾기
         const activeMode = await MessageMode.findOne({
