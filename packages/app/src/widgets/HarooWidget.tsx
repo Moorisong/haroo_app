@@ -59,7 +59,8 @@ function SmallWidget({ message, senderName, status, config = DEFAULT_WIDGET_CONF
 
     const getDisplayText = () => {
         if (status === 'ACTIVE' && message) {
-            return truncateMessage(message, 20);
+            // 가로 확장 시 더 많은 텍스트 표시 (40자)
+            return truncateMessage(message, 40);
         }
         if (status === 'EXPIRED') return config.showEmoji ? `${emoji} 종료됨` : '종료됨';
         return config.showEmoji ? `${emoji} 대기중` : '대기중';

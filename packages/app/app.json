@@ -42,7 +42,7 @@
               "minHeight": "40dp",
               "description": "오늘 받은 메시지를 간략히 확인",
               "updatePeriodMillis": 1800000,
-              "resizeMode": "none",
+              "resizeMode": "horizontal",
               "widgetFeatures": "reconfigurable|configuration_optional"
             },
             {
