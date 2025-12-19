@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { advanceDay, resetTestState, getTestStatus, createTestUser, createTestConnection, forceActivateMessageMode, forceExpireMessageMode, getTestMessageLogs } from '../services/api';
+import { advanceDay, resetTestState, getTestStatus, createTestUser, createTestConnection, forceActivateMessageMode, forceExpireMessageMode, getTestMessageLogs, getTestPushLogs } from '../services/api';
 
 export const TestToolsScreen = () => {
     const insets = useSafeAreaInsets();
@@ -115,22 +115,45 @@ export const TestToolsScreen = () => {
                     <Text style={styles.buttonText}>Force Expire</Text>
                 </TouchableOpacity>
 
+            </View>
+
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Receiver Simulation</Text>
+
                 <TouchableOpacity
                     style={[styles.button, { backgroundColor: '#607D8B' }]}
                     onPress={async () => {
                         setLoading(true);
                         try {
                             const logs = await getTestMessageLogs();
-                            Alert.alert('Message Logs', JSON.stringify(logs, null, 2));
+                            Alert.alert('Receiver Message', JSON.stringify(logs, null, 2));
                         } catch (error) {
-                            Alert.alert('Error', 'Failed to fetch logs');
+                            Alert.alert('Error', 'Failed to fetch messages');
                         } finally {
                             setLoading(false);
                         }
                     }}
                     disabled={loading}
                 >
-                    <Text style={styles.buttonText}>View Message Logs</Text>
+                    <Text style={styles.buttonText}>View Receiver Message</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.button, { backgroundColor: '#3F51B5' }]}
+                    onPress={async () => {
+                        setLoading(true);
+                        try {
+                            const logs = await getTestPushLogs();
+                            Alert.alert('Receiver Push Logs', JSON.stringify(logs, null, 2));
+                        } catch (error) {
+                            Alert.alert('Error', 'Failed to fetch push logs');
+                        } finally {
+                            setLoading(false);
+                        }
+                    }}
+                    disabled={loading}
+                >
+                    <Text style={styles.buttonText}>View Receiver Push Logs</Text>
                 </TouchableOpacity>
             </View>
 

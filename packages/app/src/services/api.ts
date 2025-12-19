@@ -228,3 +228,8 @@ export const getTestMessageLogs = async () => {
     const response = await api.get('/test-tools/message-logs');
     return response.data;
 };
+
+export const getTestPushLogs = async () => {
+    const response = await api.get('/test-tools/push-logs');
+    return response.data;
+};
