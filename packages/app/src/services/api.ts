@@ -229,6 +229,11 @@ export const forceExpireMessageMode = async () => {
     return response.data;
 };
 
+export const forceRejectMessageMode = async () => {
+    const response = await api.post('/test-tools/force-reject');
+    return response.data;
+};
+
 export const getTestMessageLogs = async () => {
     const response = await api.get('/test-tools/message-logs');
     return response.data;

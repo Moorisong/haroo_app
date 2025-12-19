@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { advanceDay, advanceHours, resetTestState, getTestStatus, createTestUser, createTestConnection, forceActivateMessageMode, forceExpireMessageMode, getTestMessageLogs, getTestPushLogs } from '../services/api';
+import { advanceDay, advanceHours, resetTestState, getTestStatus, createTestUser, createTestConnection, forceActivateMessageMode, forceExpireMessageMode, forceRejectMessageMode, getTestMessageLogs, getTestPushLogs } from '../services/api';
 
 export const TestToolsScreen = () => {
     const insets = useSafeAreaInsets();
@@ -120,6 +120,14 @@ export const TestToolsScreen = () => {
                     disabled={loading}
                 >
                     <Text style={styles.buttonText}>Force Expire</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.button, { backgroundColor: '#E91E63' }]}
+                    onPress={() => handleAction(forceRejectMessageMode, 'Force Rejected')}
+                    disabled={loading}
+                >
+                    <Text style={styles.buttonText}>Force Reject (PENDING only)</Text>
                 </TouchableOpacity>
 
             </View>

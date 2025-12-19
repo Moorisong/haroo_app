@@ -4,7 +4,7 @@ import User from '../models/User';
 import MessageMode from '../models/MessageMode';
 import Message from '../models/Message';
 import { protect } from '../middlewares/authMiddleware';
-import { sendModeAcceptedPush, sendPushNotification, PUSH_MESSAGES, sendModeRequestedPush } from '../services/pushService';
+import { sendModeAcceptedPush, sendModeRejectedPush, sendPushNotification, PUSH_MESSAGES, sendModeRequestedPush } from '../services/pushService';
 import { runCleanup } from '../schedulers/messageCleanupScheduler';
 import PushLog from '../models/PushLog';
 
@@ -268,6 +268,40 @@ router.post('/force-expire', protect, async (req: Request, res: Response) => {
         res.json({ message: 'Force expired connection', mode });
     } catch (error) {
         res.status(500).json({ error: 'Failed to force expire', details: error });
+    }
+});
+
+router.post('/force-reject', protect, async (req: Request, res: Response) => {
+    try {
+        const user = req.user;
+        const TEST_USER_ID = 'TEST_RECEIVER';
+        const testUser = await User.findOne({ kakaoId: TEST_USER_ID });
+
+        if (!testUser) {
+            return res.status(404).json({ error: 'Test user not found.' });
+        }
+
+        const mode = await MessageMode.findOne({
+            $or: [
+                { initiator: user._id, recipient: testUser._id },
+                { initiator: testUser._id, recipient: user._id }
+            ],
+            status: 'PENDING'
+        });
+
+        if (!mode) {
+            return res.status(404).json({ error: 'No PENDING connection found with test user' });
+        }
+
+        mode.status = 'REJECTED';
+        await mode.save();
+
+        // Trigger Push: Simulate "Receiver Rejected" -> Notify Initiator
+        await sendModeRejectedPush(mode.initiator.toString());
+
+        res.json({ message: 'Force rejected connection', mode });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to force reject', details: error });
     }
 });
 
