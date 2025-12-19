@@ -5,6 +5,8 @@ import MessageMode from '../models/MessageMode';
 import Message from '../models/Message';
 import { protect } from '../middlewares/authMiddleware';
 import { sendModeAcceptedPush, sendPushNotification, PUSH_MESSAGES, sendModeRequestedPush } from '../services/pushService';
+import { runCleanup } from '../schedulers/messageCleanupScheduler';
+import PushLog from '../models/PushLog';
 
 const router = express.Router();
 
@@ -26,13 +28,17 @@ router.get('/status', (req: Request, res: Response) => {
     });
 });
 
-router.post('/advance-day', (req: Request, res: Response) => {
+router.post('/advance-day', async (req: Request, res: Response) => {
     const { days } = req.body;
     advanceDay(days || 1);
+
+    // [FIX] Manually trigger cleanup to expire modes/messages immediately
+    await runCleanup();
+
     res.json({ message: `Advanced ${days || 1} day(s)`, currentOffset: getOffset(), currentTestDate: getToday() });
 });
 
-import PushLog from '../models/PushLog';
+
 
 // ... existing code ...
 
@@ -134,6 +140,11 @@ router.post('/create-connection', protect, async (req: Request, res: Response) =
                 { initiator: user._id, recipient: testUser._id },
                 { initiator: testUser._id, recipient: user._id }
             ]
+        });
+
+        // [FIX] Also delete old Push Logs to ensure fresh simulation logs
+        await PushLog.deleteMany({
+            userId: { $in: [user._id, testUser._id] }
         });
 
         // Create PENDING connection
