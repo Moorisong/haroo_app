@@ -1,9 +1,8 @@
+import './config/env'; // Must be first
 import app from './app';
 import connectDB from './config/db';
-import dotenv from 'dotenv';
 import { initMessageCleanupScheduler } from './schedulers/messageCleanupScheduler';
 
-dotenv.config();
 
 const PORT = process.env.PORT || 3000;
 
@@ -15,10 +14,9 @@ const startServer = async () => {
 
     app.listen(PORT, () => {
         console.log(`
-    ################################################
-    🛡️  Server listening on port: ${PORT} 🛡️
-    ################################################
-        `);
+    ################################################`);
+        console.log(`    🛡️  Server listening on port: ${PORT} 🛡️`);
+        console.log('    ################################################');
     });
 };
 

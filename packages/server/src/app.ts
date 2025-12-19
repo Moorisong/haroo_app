@@ -1,11 +1,8 @@
+import './config/env'; // Must be first
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
-
-// Load environment variables
-dotenv.config();
 
 const app = express();
 
