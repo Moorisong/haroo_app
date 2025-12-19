@@ -35,7 +35,7 @@ const seedMessage = async () => {
         const sampleMessage = await Message.create({
             modeId: activeMode._id,
             sender: activeMode.initiator,
-            content: '오늘 하루도 수고했어요 💕',
+            content: '안녕!\n오늘 하루도 정말 수고했어요 💕\n\n항상 응원하고 있어.\n사랑해 ❤️',
             isRead: false,
             status: 'ACTIVE',
             sentAt,
