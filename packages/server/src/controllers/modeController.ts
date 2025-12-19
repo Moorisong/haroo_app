@@ -91,6 +91,12 @@ export const requestMode = async (req: Request, res: Response, next: NextFunctio
         }
 
         // 4. 모드 생성
+        const now = getToday();
+
+        // PENDING expiry: 24 hours from request time
+        const requestedAt = now;
+        const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // +24h
+
         const newMode = await MessageMode.create({
             initiator: initiator._id,
             recipient: recipient._id,
@@ -98,6 +104,8 @@ export const requestMode = async (req: Request, res: Response, next: NextFunctio
             status,
             startDate,
             endDate,
+            requestedAt: status === 'PENDING' ? requestedAt : undefined,
+            expiresAt: status === 'PENDING' ? expiresAt : undefined,
         });
 
         // 5. 수신자에게 푸시 알림 전송 (TEST 모드여도 알림은 갈 수 있음, or skip logic provided elsewhere)
@@ -135,6 +143,15 @@ export const acceptMode = async (req: Request, res: Response, next: NextFunction
         if (mode.status !== 'PENDING') {
             res.status(400);
             throw new Error('Mode is not in pending state');
+        }
+
+        // [NEW] Request-time expiry check: if PENDING but past expiresAt, auto-expire
+        const now = getToday();
+        if (mode.expiresAt && now > mode.expiresAt) {
+            mode.status = 'EXPIRED';
+            await mode.save();
+            res.status(400);
+            throw new Error('This request has expired');
         }
 
         // 3. 중복 상태 재확인 (그 사이 다른 모드가 생겼을 수도 있음)

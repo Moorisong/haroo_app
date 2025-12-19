@@ -74,6 +74,60 @@ const runCleanup = async () => {
             console.log(`[EXPIRE] 모드 만료 처리 완료`);
         }
 
+        // 4. PENDING 리마인드 푸시 (12시간 경과, reminderSent === false)
+        const twelveHoursAgo = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+        const reminderCandidates = await MessageMode.find({
+            status: 'PENDING',
+            reminderSent: { $ne: true },
+            requestedAt: { $lt: twelveHoursAgo }, // 12시간 경과
+            expiresAt: { $gt: now }, // 아직 만료 안 됨
+        });
+
+        if (reminderCandidates.length > 0) {
+            console.log(`[REMINDER] ${reminderCandidates.length}개 신청에 리마인드 푸시 전송`);
+
+            for (const mode of reminderCandidates) {
+                // 수신자에게 리마인드 푸시 전송
+                await sendPushNotification(
+                    mode.recipient.toString(),
+                    '아직 선택하지 않은 마음이 있어요',
+                    '하루가 지나면 이 요청은 사라져요',
+                    { type: 'PENDING_REMINDER' }
+                );
+
+                // 전송 기록
+                mode.reminderSent = true;
+                mode.reminderSentAt = now;
+                await mode.save();
+            }
+            console.log(`[REMINDER] 리마인드 푸시 전송 완료`);
+        }
+
+        // 5. PENDING 상태의 오래된 신청 자동 만료 (24시간 경과)
+        // 수신자에게 알림 없음 (무응답 = 자연 종료)
+        const expiredPendingModes = await MessageMode.find({
+            status: 'PENDING',
+            expiresAt: { $lt: now },
+        });
+
+        if (expiredPendingModes.length > 0) {
+            console.log(`[PENDING EXPIRE] ${expiredPendingModes.length}개 신청 만료 처리 시작`);
+
+            for (const mode of expiredPendingModes) {
+                mode.status = 'EXPIRED';
+                await mode.save();
+
+                // 신청자에게만 알림 (수신자에게는 알림 없음 - 명세 준수)
+                await sendPushNotification(
+                    mode.initiator.toString(),
+                    '메시지 모드 신청이 만료되었어요',
+                    '응답이 없어 자동으로 종료되었습니다.',
+                    { type: 'PENDING_EXPIRED' }
+                );
+            }
+            console.log(`[PENDING EXPIRE] 신청 만료 처리 완료`);
+        }
+
         console.log(`[${new Date().toISOString()}] 메시지 정리 작업 완료`);
     } catch (error) {
         console.error('메시지 정리 작업 오류:', error);

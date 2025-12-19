@@ -7,6 +7,10 @@ export interface IMessageMode extends Document {
     startDate?: Date; // 수락하여 활성화된 시점
     endDate?: Date; // 활성화 시점 + durationDays
     durationDays: number; // 1 or 3
+    requestedAt?: Date; // PENDING 신청 시점 (for expiry calculation)
+    expiresAt?: Date; // PENDING 만료 시점 (requestedAt + 24h)
+    reminderSent?: boolean; // 리마인드 푸시 전송 여부
+    reminderSentAt?: Date; // 리마인드 푸시 전송 시점
     createdAt: Date;
     updatedAt: Date;
 }
@@ -37,6 +41,19 @@ const MessageModeSchema: Schema = new Schema({
         type: Number,
         required: true,
         enum: [1, 3], // 1일권 or 3일권
+    },
+    requestedAt: {
+        type: Date,
+    },
+    expiresAt: {
+        type: Date,
+    },
+    reminderSent: {
+        type: Boolean,
+        default: false,
+    },
+    reminderSentAt: {
+        type: Date,
     },
 }, {
     timestamps: true,
