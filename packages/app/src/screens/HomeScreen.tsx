@@ -84,7 +84,14 @@ export const HomeScreen: React.FC = () => {
 
     useFocusEffect(
         useCallback(() => {
-            fetchData();
+            fetchData().then(() => {
+                // 위젯 조용히 갱신 (Android만)
+                if (Platform.OS === 'android') {
+                    import('../widgets/widgetRefresh').then(({ refreshWidgetSilently }) => {
+                        refreshWidgetSilently();
+                    }).catch(() => { });
+                }
+            });
         }, [fetchData])
     );
 

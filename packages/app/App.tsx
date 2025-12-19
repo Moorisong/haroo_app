@@ -43,12 +43,32 @@ const AuthStack = () => {
 const RootNavigator = () => {
   const { accessToken, isLoading } = useAuth();
 
-  // 로그인 후 푸시 알림 등록
+  // 로그인 후 푸시 알림 등록 + 위젯 조용히 새로고침
   useEffect(() => {
     if (accessToken) {
       registerForPushNotificationsAsync();
       const cleanup = setupNotificationListeners();
-      return cleanup;
+
+      // 위젯 조용히 새로고침 (앱이 열렸을 때)
+      import('./src/widgets/widgetRefresh').then(({ refreshWidgetSilently }) => {
+        refreshWidgetSilently();
+      });
+
+      // 앱이 백그라운드에서 포그라운드로 올 때마다 위젯 새로고침
+      const { AppState } = require('react-native');
+      const handleAppStateChange = (nextAppState: string) => {
+        if (nextAppState === 'active') {
+          import('./src/widgets/widgetRefresh').then(({ refreshWidgetSilently }) => {
+            refreshWidgetSilently();
+          });
+        }
+      };
+      const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+      return () => {
+        cleanup();
+        subscription.remove();
+      };
     }
   }, [accessToken]);
 
