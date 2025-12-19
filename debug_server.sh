@@ -2,7 +2,7 @@
 
 # 1. Start clean: Reset test state
 echo "--- RESETTING TEST STATE ---"
-curl -X POST http://localhost:3000/test-tools/reset
+curl -X POST https://server.haroo.site/test-tools/reset
 echo -e "\n"
 
 # 2. Login as Initiator (User A)
@@ -12,12 +12,12 @@ echo -e "\n"
 # Easier: Use the app? No, app failed.
 # Let's try to verify if ANY requests are hitting the server logs.
 
-# Wait.. if nodemon output shows NO requests, then the App is not hitting localhost:3000.
+# Wait.. if nodemon output shows NO requests, then the App is not hitting https://server.haroo.site.
 # The App is running on Android Emulator?
 # Android Emulator 10.0.2.2 -> localhost.
 # If the app is configured to hit a different IP or port, that explains it.
 
 # Let's verify server is actually reachable first.
 echo "--- CHECKING SERVER STATUS ---"
-curl http://localhost:3000/test-tools/status
+curl https://server.haroo.site/test-tools/status
 echo -e "\n"
