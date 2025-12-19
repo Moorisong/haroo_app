@@ -6,6 +6,6 @@ export const APP_CONSTANTS = {
     CONTACT_EMAIL: 'thiagoo@naver.com',
 
     // 약관 페이지 URL
-    TERMS_URL: 'https://server.haroo.site/terms',
-    PRIVACY_URL: 'https://server.haroo.site/privacy',
+    TERMS_URL: 'https://haroo-app.vercel.app/terms',
+    PRIVACY_URL: 'https://haroo-app.vercel.app/privacy',
 };
