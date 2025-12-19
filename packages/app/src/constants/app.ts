@@ -5,7 +5,7 @@ export const APP_CONSTANTS = {
     // 문의 이메일
     CONTACT_EMAIL: 'thiagoo@naver.com',
 
-    // 약관 페이지 URL (배포 후 실제 도메인으로 변경)
-    TERMS_URL: 'http://localhost:3002/terms',
-    PRIVACY_URL: 'http://localhost:3002/privacy',
+    // 약관 페이지 URL
+    TERMS_URL: 'https://server.haroo.site/terms',
+    PRIVACY_URL: 'https://server.haroo.site/privacy',
 };

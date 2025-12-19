@@ -11,7 +11,7 @@ const { width } = Dimensions.get('window');
 
 // 환경변수에서 값 가져오기 (REST API 키 사용)
 const KAKAO_CLIENT_ID = process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY;
-const SERVER_REDIRECT_URI = process.env.EXPO_PUBLIC_SERVER_REDIRECT_URI || 'http://localhost:3000/auth/kakao';
+const SERVER_REDIRECT_URI = process.env.EXPO_PUBLIC_SERVER_REDIRECT_URI || 'https://server.haroo.site/auth/kakao';
 
 console.log('[LandingScreen] KAKAO_CLIENT_ID:', KAKAO_CLIENT_ID ? 'SET' : 'NOT SET');
 console.log('[LandingScreen] SERVER_REDIRECT_URI:', SERVER_REDIRECT_URI);

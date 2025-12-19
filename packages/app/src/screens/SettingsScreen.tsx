@@ -255,22 +255,23 @@ export const SettingsScreen: React.FC = () => {
                             <Feather name="external-link" size={16} color={COLORS.textTertiary} />
                         </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={styles.infoItem}
-                            onPress={async () => {
-                                await Clipboard.setStringAsync(APP_CONSTANTS.CONTACT_EMAIL);
-                                showToastMessage('이메일 주소가 복사되었어요.');
-                            }}
-                        >
+                        <View style={styles.infoItem}>
                             <View style={styles.infoItemLeft}>
                                 <Feather name="mail" size={20} color={COLORS.textSecondary} />
                                 <Text style={styles.infoItemLabel}>문의하기</Text>
                             </View>
                             <View style={styles.infoItemRight}>
                                 <Text style={styles.infoItemValue}>{APP_CONSTANTS.CONTACT_EMAIL}</Text>
-                                <Feather name="copy" size={14} color={COLORS.textTertiary} style={{ marginLeft: 6 }} />
+                                <TouchableOpacity
+                                    onPress={async () => {
+                                        await Clipboard.setStringAsync(APP_CONSTANTS.CONTACT_EMAIL);
+                                    }}
+                                    style={{ padding: 6, marginLeft: 2 }}
+                                >
+                                    <Feather name="copy" size={14} color={COLORS.textTertiary} />
+                                </TouchableOpacity>
                             </View>
-                        </TouchableOpacity>
+                        </View>
 
                         <View style={styles.infoItem}>
                             <View style={styles.infoItemLeft}>

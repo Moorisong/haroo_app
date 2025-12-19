@@ -10,7 +10,7 @@
     "newArchEnabled": false,
     "private": true,
     "extra": {
-      "APP_MODE": "TEST"
+      "APP_MODE": "PROD"
     },
     "splash": {
       "image": "./assets/splash-icon.png",
