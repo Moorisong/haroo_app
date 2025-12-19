@@ -140,6 +140,12 @@ export const HomeScreen: React.FC = () => {
     };
 
     const getDaysRemaining = () => {
+        // Use server provided remainingDays if available (Handles Test Mode Time Travel)
+        if (connection?.remainingDays !== undefined) {
+            return connection.remainingDays;
+        }
+
+        // Fallback for old API or local calculation (using device time, not test aware)
         if (!connection?.endDate) return 0;
         const today = new Date();
         const endDate = new Date(connection.endDate);

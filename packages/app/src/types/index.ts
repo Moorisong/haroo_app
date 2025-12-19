@@ -17,6 +17,7 @@ export interface Connection {
     startDate?: Date;
     endDate?: Date;
     canSendToday?: boolean;
+    remainingDays?: number;
 }
 
 export interface User {

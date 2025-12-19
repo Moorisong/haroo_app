@@ -288,8 +288,17 @@ export const getCurrentMode = async (req: Request, res: Response, next: NextFunc
             canSendToday = !messageSentToday;
         }
 
-        // Return mode along with canSendToday
-        res.json({ ...mode.toObject(), canSendToday });
+        // Calculate remaining days
+        let remainingDays = 0;
+        if (mode.endDate) {
+            const today = getToday(); // Use test-aware date
+            const endDate = new Date(mode.endDate);
+            const diffTime = Math.max(endDate.getTime() - today.getTime(), 0);
+            remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        // Return mode along with canSendToday and remainingDays
+        res.json({ ...mode.toObject(), canSendToday, remainingDays });
     } catch (error) {
         next(error);
     }
