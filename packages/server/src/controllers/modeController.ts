@@ -1,0 +1,322 @@
+import { Request, Response, NextFunction } from 'express';
+import User from '../models/User';
+import MessageMode from '../models/MessageMode';
+import Message from '../models/Message';
+import { sendModeRequestedPush, sendModeAcceptedPush, sendModeRejectedPush } from '../services/pushService';
+import { isTestMode, getToday } from '../utils/testMode';
+
+// 유틸: 유저가 이미 활성 상태의 모드(PENDING or ACTIVE)가 있는지 확인
+const hasActiveMode = async (userId: string, excludeModeId?: string) => {
+    const query: any = {
+        $or: [{ initiator: userId }, { recipient: userId }],
+        status: { $in: ['PENDING', 'ACTIVE_PERIOD'] },
+    };
+
+    // 현재 처리 중인 모드는 제외 (수락 시 자기 자신 검출 방지)
+    if (excludeModeId) {
+        query._id = { $ne: excludeModeId };
+    }
+
+    const mode = await MessageMode.findOne(query);
+    return !!mode;
+};
+
+// @desc    Request a message mode (Start connection)
+// @route   POST /modes/request
+// @access  Private
+// @body    targetHashId, durationDays
+export const requestMode = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { targetHashId, durationDays } = req.body;
+        const initiator = req.user;
+
+        if (!targetHashId || !durationDays) {
+            res.status(400);
+            throw new Error('Target Hash ID and durationDays are required');
+        }
+
+        if (![1, 3].includes(durationDays)) {
+            res.status(400);
+            throw new Error('Invalid durationDays. Must be 1 or 3.');
+        }
+
+        // 1. 대상 유저 찾기
+        const recipient = await User.findOne({ hashId: targetHashId });
+        if (!recipient) {
+            res.status(404);
+            throw new Error('User not found');
+        }
+
+        // 2. 차단 여부 확인 (내가 상대방을 차단했는지)
+        if (initiator.blockedUsers && initiator.blockedUsers.includes(targetHashId)) {
+            res.status(403);
+            throw new Error('You have blocked this user');
+        }
+
+        // 3. 차단 여부 확인 (상대가 나를 차단했는지)
+        if (recipient.blockedUsers && recipient.blockedUsers.includes(initiator.hashId)) {
+            res.status(403);
+            throw new Error('You are blocked by this user');
+        }
+
+        // 2. 나 자신에게 요청 불가
+        if (initiator._id.toString() === recipient._id.toString()) {
+            res.status(400);
+            throw new Error('Cannot request mode to yourself');
+        }
+
+        // 3. 중복/상태 체크: 나 혹은 상대방이 이미 다른 모드 진행중인지
+        // "사용자 당 동시에 1개의 메시지 모드만"
+        if (await hasActiveMode(initiator._id.toString())) {
+            res.status(400);
+            throw new Error('You already have an active or pending mode');
+        }
+
+        if (await hasActiveMode(recipient._id.toString())) {
+            res.status(400);
+            throw new Error('The recipient is currently busy with another mode');
+        }
+
+        let status = 'PENDING';
+        let startDate;
+        let endDate;
+
+        // [TEST MODE] Auto-accept for test receiver
+        if (isTestMode && recipient.kakaoId === 'TEST_RECEIVER') {
+            status = 'ACTIVE_PERIOD';
+            startDate = getToday();
+            endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + durationDays);
+            console.log(`[TEST MODE] Auto-accepting mode for ${recipient.nickname}`);
+        }
+
+        // 4. 모드 생성
+        const now = getToday();
+
+        // PENDING expiry: 24 hours from request time
+        const requestedAt = now;
+        const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // +24h
+
+        const newMode = await MessageMode.create({
+            initiator: initiator._id,
+            recipient: recipient._id,
+            durationDays,
+            status,
+            startDate,
+            endDate,
+            requestedAt: status === 'PENDING' ? requestedAt : undefined,
+            expiresAt: status === 'PENDING' ? expiresAt : undefined,
+        });
+
+        // 5. 수신자에게 푸시 알림 전송 (TEST 모드여도 알림은 갈 수 있음, or skip logic provided elsewhere)
+        if (status === 'PENDING') {
+            sendModeRequestedPush(recipient._id.toString());
+        }
+
+        res.status(201).json(newMode);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Accept a message mode request
+// @route   POST /modes/accept/:id
+// @access  Private
+export const acceptMode = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const modeId = req.params.id;
+        const userId = req.user._id;
+
+        const mode = await MessageMode.findById(modeId);
+
+        if (!mode) {
+            res.status(404);
+            throw new Error('Mode request not found');
+        }
+
+        // 요청 받은 당사자만 수락 가능
+        if (mode.recipient.toString() !== userId.toString()) {
+            res.status(403);
+            throw new Error('Not authorized to accept this request');
+        }
+
+        if (mode.status !== 'PENDING') {
+            res.status(400);
+            throw new Error('Mode is not in pending state');
+        }
+
+        // [NEW] Request-time expiry check: if PENDING but past expiresAt, auto-expire
+        const now = getToday();
+        if (mode.expiresAt && now > mode.expiresAt) {
+            mode.status = 'EXPIRED';
+            await mode.save();
+            res.status(400);
+            throw new Error('This request has expired');
+        }
+
+        // 3. 중복 상태 재확인 (그 사이 다른 모드가 생겼을 수도 있음)
+        // 자기 자신(지금 수락하려는 이 모드)은 제외하고 체크해야 함
+        if (await hasActiveMode(userId.toString(), modeId)) {
+            res.status(400);
+            throw new Error('You already have an active mode');
+        }
+
+        // startDate를 getToday() (Time Travel 지원)로 설정
+        const startDate = getToday();
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + mode.durationDays);
+
+        mode.status = 'ACTIVE_PERIOD';
+        mode.startDate = startDate;
+        mode.endDate = endDate;
+
+        await mode.save();
+
+        // 신청자에게 푸시 알림 전송
+        sendModeAcceptedPush(mode.initiator.toString());
+
+        res.json(mode);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Reject a message mode request
+// @route   POST /modes/reject/:id
+// @access  Private
+export const rejectMode = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const modeId = req.params.id;
+        const userId = req.user._id;
+
+        const mode = await MessageMode.findById(modeId);
+
+        if (!mode) {
+            res.status(404);
+            throw new Error('Mode request not found');
+        }
+
+        // 요청 받은 당사자만 거절 가능
+        if (mode.recipient.toString() !== userId.toString()) {
+            res.status(403);
+            throw new Error('Not authorized to reject this request');
+        }
+
+        if (mode.status !== 'PENDING') {
+            res.status(400);
+            throw new Error('Mode is not in pending state');
+        }
+
+        // 상태 변경: REJECTED
+        mode.status = 'REJECTED';
+        await mode.save();
+
+        // 신청자에게 푸시 알림 전송
+        sendModeRejectedPush(mode.initiator.toString());
+
+        res.json(mode);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Block a message mode request
+// @route   POST /modes/block/:id
+// @access  Private
+export const blockMode = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const modeId = req.params.id;
+        const userId = req.user._id;
+
+        const mode = await MessageMode.findById(modeId);
+
+        if (!mode) {
+            res.status(404);
+            throw new Error('Mode request not found');
+        }
+
+        // 요청 받은 당사자만 차단 가능
+        if (mode.recipient.toString() !== userId.toString()) {
+            res.status(403);
+            throw new Error('Not authorized to block this request');
+        }
+
+        if (mode.status !== 'PENDING') {
+            res.status(400);
+            throw new Error('Mode is not in pending state');
+        }
+
+        // 1. 유저 차단 (User.blockedUsers 에 initiator 추가)
+        const currentUser = await User.findById(userId);
+        const initiatorId = mode.initiator.toString();
+
+        // initiator의 hashId 가져오기
+        const initiator = await User.findById(initiatorId);
+        if (initiator && currentUser && !currentUser.blockedUsers.includes(initiator.hashId)) {
+            currentUser.blockedUsers.push(initiator.hashId);
+            await currentUser.save();
+        }
+
+        // 2. 모드 상태 변경: BLOCKED
+        mode.status = 'BLOCKED';
+        await mode.save();
+
+        res.json({ message: 'Blocked successfully', mode, blockedUsers: currentUser?.blockedUsers });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get current mode status
+// @route   GET /modes/current
+// @access  Private
+export const getCurrentMode = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userId = req.user._id;
+
+        const mode = await MessageMode.findOne({
+            $or: [{ initiator: userId }, { recipient: userId }],
+            status: { $in: ['PENDING', 'ACTIVE_PERIOD'] },
+        })
+            .populate('initiator', 'hashId settings')
+            .populate('recipient', 'hashId settings');
+
+        if (!mode) {
+            res.json(null); // No active or pending mode
+            return;
+        }
+
+        let canSendToday = false;
+        if (mode.status === 'ACTIVE_PERIOD') {
+            // Use getToday() for Time Travel support
+            const startOfDay = getToday();
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = getToday();
+            endOfDay.setHours(23, 59, 59, 999);
+
+            const messageSentToday = await Message.findOne({
+                modeId: mode._id,
+                sender: userId, // Current user is the sender
+                sentAt: {
+                    $gte: startOfDay,
+                    $lte: endOfDay,
+                },
+            });
+            canSendToday = !messageSentToday;
+        }
+
+        // Calculate remaining days
+        let remainingDays = 0;
+        if (mode.endDate) {
+            const today = getToday(); // Use test-aware date
+            const endDate = new Date(mode.endDate);
+            const diffTime = Math.max(endDate.getTime() - today.getTime(), 0);
+            remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        // Return mode along with canSendToday and remainingDays
+        res.json({ ...mode.toObject(), canSendToday, remainingDays });
+    } catch (error) {
+        next(error);
+    }
+};
