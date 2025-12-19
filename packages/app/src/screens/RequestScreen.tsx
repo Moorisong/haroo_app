@@ -121,27 +121,50 @@ export const RequestScreen: React.FC = () => {
                         <View style={styles.durationSection}>
                             <Text style={styles.sectionLabel}>기간 선택</Text>
                             <View style={styles.durationOptions}>
-                                {([1, 3] as const).map((days) => (
-                                    <TouchableOpacity
-                                        key={days}
-                                        style={[
-                                            styles.durationOption,
-                                            durationDays === days && styles.durationOptionSelected
-                                        ]}
-                                        onPress={() => setDurationDays(days)}
-                                    >
-                                        <Text style={[
-                                            styles.durationText,
-                                            durationDays === days && styles.durationTextSelected
-                                        ]}>
-                                            {days}일
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
+                                <TouchableOpacity
+                                    style={[
+                                        styles.durationOption,
+                                        durationDays === 1 && styles.durationOptionSelected
+                                    ]}
+                                    onPress={() => setDurationDays(1)}
+                                >
+                                    <Text style={[
+                                        styles.durationText,
+                                        durationDays === 1 && styles.durationTextSelected
+                                    ]}>
+                                        1일
+                                    </Text>
+                                    <Text style={[
+                                        styles.priceText,
+                                        durationDays === 1 && styles.priceTextSelected
+                                    ]}>
+                                        500원
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.durationOption,
+                                        durationDays === 3 && styles.durationOptionSelected
+                                    ]}
+                                    onPress={() => setDurationDays(3)}
+                                >
+                                    <Text style={[
+                                        styles.durationText,
+                                        durationDays === 3 && styles.durationTextSelected
+                                    ]}>
+                                        3일
+                                    </Text>
+                                    <Text style={[
+                                        styles.priceText,
+                                        durationDays === 3 && styles.priceTextSelected
+                                    ]}>
+                                        1,000원
+                                    </Text>
+                                </TouchableOpacity>
                             </View>
                             <Text style={styles.durationHint}>
                                 선택한 기간 동안 하루에 한 번 메시지를 보낼 수 있어요.{'\n'}
-                                상대방은 이 조건을 보고 수락 여부를 결정해요.
+                                결제 완료 후 상대방에게 신청이 전송됩니다.
                             </Text>
                         </View>
 
@@ -156,7 +179,7 @@ export const RequestScreen: React.FC = () => {
 
                         {/* 신청 버튼 */}
                         <PrimaryButton
-                            title={isSubmitting ? "신청 중..." : "메시지 모드 신청하기"}
+                            title={isSubmitting ? "결제 진행 중..." : `${durationDays === 1 ? '500원' : '1,000원'} 결제하고 신청하기`}
                             onPress={handleRequest}
                             disabled={isSubmitting}
                         />
@@ -270,25 +293,36 @@ const styles = StyleSheet.create({
     },
     durationOption: {
         flex: 1,
-        paddingVertical: SPACING.md,
+        paddingVertical: SPACING.lg,
         borderRadius: 12,
         borderWidth: 1,
         borderColor: COLORS.border,
         backgroundColor: 'rgba(255,255,255,0.6)',
         alignItems: 'center',
+        gap: 4,
     },
     durationOptionSelected: {
         borderColor: COLORS.accent,
         backgroundColor: '#FFFBF5',
+        borderWidth: 2,
     },
     durationText: {
-        fontSize: FONT_SIZES.md,
+        fontSize: FONT_SIZES.lg,
         fontFamily: FONTS.medium,
         color: COLORS.textSecondary,
     },
     durationTextSelected: {
         color: COLORS.accent,
         fontFamily: FONTS.bold,
+    },
+    priceText: {
+        fontSize: FONT_SIZES.sm,
+        fontFamily: FONTS.regular,
+        color: COLORS.textTertiary,
+    },
+    priceTextSelected: {
+        color: COLORS.accent,
+        fontFamily: FONTS.medium,
     },
     durationHint: {
         fontSize: FONT_SIZES.xs,
