@@ -15,7 +15,7 @@ import {
 } from '@expo-google-fonts/nanum-gothic';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { HomeScreen, LandingScreen, RequestScreen, SendScreen, ReceiveScreen, SettingsScreen, TestToolsScreen } from './src/screens';
+import { HomeScreen, LandingScreen, RequestScreen, SendScreen, ReceiveScreen, SettingsScreen, TestToolsScreen, TraceScreen, TraceWriteScreen } from './src/screens';
 import { registerForPushNotificationsAsync, setupNotificationListeners } from './src/services/notifications';
 import Constants from 'expo-constants';
 
@@ -30,6 +30,8 @@ const AppStack = () => {
       <Stack.Screen name="Send" component={SendScreen} />
       <Stack.Screen name="Receive" component={ReceiveScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="Trace" component={TraceScreen} />
+      <Stack.Screen name="TraceWrite" component={TraceWriteScreen} />
       {IS_TEST && <Stack.Screen name="TestTools" component={TestToolsScreen} />}
     </Stack.Navigator>
   );
