@@ -149,12 +149,20 @@ export const TraceWriteScreen: React.FC = () => {
         }
     };
 
-    const handlePayment = (option: 'single' | 'threeDay') => {
-        // TODO: 실제 결제 로직
-        console.log('Payment:', option);
-        setShowPaymentModal(false);
-        setWritePermission('PAID_AVAILABLE');
-        showToastMsg('결제가 완료되었습니다.');
+    const handlePayment = async (option: 'single' | 'threeDay') => {
+        try {
+            await traceService.mockPayment(option);
+            setShowPaymentModal(false);
+            setWritePermission('PAID_AVAILABLE');
+            showToastMsg('결제가 완료되었습니다.');
+
+            // Refund checkWritePermission implicitly later or by user action
+            // Or force refresh logic?
+            setWritePermission('PAID_AVAILABLE'); // Optimistic update
+        } catch (error) {
+            console.error(error);
+            showToastMsg('결제 처리에 실패했습니다.');
+        }
     };
 
     const formatCooldownTime = () => {
@@ -275,6 +283,9 @@ export const TraceWriteScreen: React.FC = () => {
                                 {content.length}/{MAX_LENGTH}
                             </Text>
                         </View>
+                        <Text style={styles.helperText}>
+                            * 한 줄은 2시간마다 작성할 수 있어요.
+                        </Text>
                     </ScrollView>
                 </KeyboardAvoidingView>
 
@@ -313,8 +324,8 @@ export const TraceWriteScreen: React.FC = () => {
                                     onPress={() => handlePayment('single')}
                                 >
                                     <View>
-                                        <Text style={styles.paymentOptionTitle}>오늘 1회 추가</Text>
-                                        <Text style={styles.paymentOptionDesc}>지금 바로 1개 더 남기기</Text>
+                                        <Text style={styles.paymentOptionTitle}>1일 자유이용권</Text>
+                                        <Text style={styles.paymentOptionDesc}>결제 시점부터 24시간 동안 작성 가능</Text>
                                     </View>
                                     <Text style={styles.paymentPrice}>₩500</Text>
                                 </TouchableOpacity>
@@ -324,8 +335,8 @@ export const TraceWriteScreen: React.FC = () => {
                                     onPress={() => handlePayment('threeDay')}
                                 >
                                     <View>
-                                        <Text style={styles.paymentOptionTitle}>3일간 매일 1회 추가</Text>
-                                        <Text style={styles.paymentOptionDesc}>3일 동안 매일 1개씩 더 남기기</Text>
+                                        <Text style={styles.paymentOptionTitle}>2일 자유이용권</Text>
+                                        <Text style={styles.paymentOptionDesc}>결제 시점부터 48시간 동안 작성 가능</Text>
                                     </View>
                                     <Text style={styles.paymentPrice}>₩1,000</Text>
                                 </TouchableOpacity>
@@ -479,6 +490,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: SPACING.xl,
+        paddingBottom: 150, // 조금 더 위쪽으로 배치
     },
     cooldownTitle: {
         fontSize: FONT_SIZES.xl,
@@ -573,5 +585,12 @@ const styles = StyleSheet.create({
         fontFamily: FONTS.medium,
         color: COLORS.textSecondary,
         textAlign: 'center',
+    },
+    helperText: {
+        fontSize: FONT_SIZES.xs,
+        fontFamily: FONTS.regular,
+        color: COLORS.textTertiary,
+        marginTop: SPACING.md,
+        marginLeft: SPACING.xs,
     },
 });
