@@ -35,11 +35,41 @@ class LocationService {
                 };
             }
 
-            const location = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.Balanced,
-            });
+            // 1. First try last known position (Fastest)
+            const lastKnown = await Location.getLastKnownPositionAsync();
 
-            const { latitude, longitude } = location.coords;
+            // If last known location is recent (within 1 min), utilize it immediately.
+            if (lastKnown && (Date.now() - lastKnown.timestamp < 1 * 60 * 1000)) {
+                // console.log('Using cached location (recent)');
+                const { latitude, longitude } = lastKnown.coords;
+                return {
+                    lat: latitude,
+                    lng: longitude,
+                    isInKorea: this.checkIfInKorea(latitude, longitude),
+                };
+            }
+
+            // 2. Get current position with timeout
+            let location: Location.LocationObject | null = null;
+            try {
+                location = await Promise.race([
+                    Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+                    new Promise<null>((_, reject) =>
+                        setTimeout(() => reject(new Error('TIMEOUT')), 8000)
+                    )
+                ]) as Location.LocationObject;
+            } catch (e) {
+                console.log('Location fetch timed out, falling back to last known');
+            }
+
+            // If timeout or null, fallback to lastKnown if available (even if stale)
+            const finalLocation = location || lastKnown;
+
+            if (!finalLocation) {
+                throw new Error('Location unavailable');
+            }
+
+            const { latitude, longitude } = finalLocation.coords;
             const isInKorea = this.checkIfInKorea(latitude, longitude);
 
             return {

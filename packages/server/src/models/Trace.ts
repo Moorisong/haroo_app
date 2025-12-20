@@ -6,7 +6,7 @@ export type TraceStatus = 'ACTIVE' | 'HIDDEN' | 'REMOVED';
 export interface ITrace extends Document {
     content: string;
     toneTag: TraceToneTag;
-    
+
     // 위치 정보
     location: {
         lat: number;
@@ -16,17 +16,18 @@ export interface ITrace extends Document {
         x: number;
         y: number;
     };
-    
+
     status: TraceStatus;
-    
+
     // 메타데이터
     authorId?: mongoose.Types.ObjectId; // 익명이어도 내부 추적용
     authorIp?: string;
-    
+    likedBy?: mongoose.Types.ObjectId[];
+
     // 카운터
     likeCount: number;
     reportScore: number; // 신고 누적 점수
-    
+
     // 시간
     createdAt: Date;
     expiresAt: Date;
@@ -63,16 +64,22 @@ const TraceSchema: Schema = new Schema({
         required: false,
     },
     authorIp: { type: String },
+
+    likedBy: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+    }],
+
     likeCount: { type: Number, default: 0 },
     reportScore: { type: Number, default: 0 },
-    
+
     createdAt: { type: Date, default: Date.now },
     expiresAt: { type: Date, required: true },
 }, {
     timestamps: true,
 });
 
-TraceSchema.index({ 'grid.x': 1, 'grid.y': 1, status: 1 });
+TraceSchema.index({ 'grid.x': 1, 'grid.y': 1, status: 1, createdAt: -1 });
 TraceSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 TraceSchema.index({ authorId: 1, createdAt: -1 });
 
