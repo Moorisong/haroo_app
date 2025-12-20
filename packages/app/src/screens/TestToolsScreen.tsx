@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { advanceDay, advanceHours, resetTestState, getTestStatus, createTestUser, createTestConnection, forceActivateMessageMode, forceExpireMessageMode, forceRejectMessageMode, getTestMessageLogs, getTestPushLogs } from '../services/api';
+import LocationService from '../services/LocationService';
+import traceService from '../services/traceService';
 
 export const TestToolsScreen = () => {
     const insets = useSafeAreaInsets();
@@ -220,6 +222,31 @@ export const TestToolsScreen = () => {
                     <Text style={styles.buttonText}>DENIED_COOLDOWN (쿨다운 테스트)</Text>
                 </TouchableOpacity>
 
+                <TouchableOpacity
+                    style={[styles.button, { backgroundColor: '#607D8B', marginTop: 10 }]}
+                    onPress={async () => {
+                        try {
+                            setLoading(true);
+                            const loc = await LocationService.getCurrentLocation();
+                            if (loc.errorMsg || !loc.isInKorea) {
+                                // Fallback mock
+                                await traceService.seedTestMessages(35.8296177, 128.7372248);
+                            } else {
+                                await traceService.seedTestMessages(loc.lat, loc.lng);
+                            }
+                            Alert.alert('Success', '테스트 메시지 5개가 생성되었습니다.');
+                        } catch (e) {
+                            console.error(e);
+                            Alert.alert('Error', '생성 실패');
+                        } finally {
+                            setLoading(false);
+                        }
+                    }}
+                    disabled={loading}
+                >
+                    <Text style={styles.buttonText}>타인 글 5개 생성 (Seeding)</Text>
+                </TouchableOpacity>
+
                 <View style={styles.traceStatusBox}>
                     <Text style={styles.traceStatusText}>
                         현재 상태: {(global as any).TRACE_WRITE_PERMISSION || 'FREE_AVAILABLE'}
@@ -231,7 +258,10 @@ export const TestToolsScreen = () => {
                 <Text style={styles.sectionTitle}>Reset</Text>
                 <TouchableOpacity
                     style={[styles.button, styles.dangerButton]}
-                    onPress={() => handleAction(resetTestState, 'Test State Reset')}
+                    onPress={() => {
+                        handleAction(resetTestState, 'Test State Reset');
+                        delete (global as any).TRACE_WRITE_PERMISSION;
+                    }}
                     disabled={loading}
                 >
                     <Text style={[styles.buttonText, styles.dangerButtonText]}>Reset Date & State</Text>
