@@ -173,6 +173,61 @@ export const TestToolsScreen = () => {
             </View>
 
             <View style={styles.section}>
+                <Text style={styles.sectionTitle}>📍 여기 한줄 (Trace) Test</Text>
+                <Text style={styles.sectionDesc}>작성 권한 상태를 변경하여 테스트합니다.</Text>
+
+                <TouchableOpacity
+                    style={[styles.button, { backgroundColor: '#4CAF50' }]}
+                    onPress={() => {
+                        global.TRACE_WRITE_PERMISSION = 'FREE_AVAILABLE';
+                        Alert.alert('Trace Test', '무료 작성 가능 상태로 변경됨\n\n한 줄 남기기 화면에 진입해보세요.');
+                    }}
+                    disabled={loading}
+                >
+                    <Text style={styles.buttonText}>FREE_AVAILABLE (무료 작성 가능)</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.button, { backgroundColor: '#FF9800' }]}
+                    onPress={() => {
+                        global.TRACE_WRITE_PERMISSION = 'FREE_USED';
+                        Alert.alert('Trace Test', '무료 작성 초과 상태로 변경됨\n\n한 줄 남기기 진입 시 결제 모달이 표시됩니다.');
+                    }}
+                    disabled={loading}
+                >
+                    <Text style={styles.buttonText}>FREE_USED (결제 모달 테스트)</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.button, { backgroundColor: '#9C27B0' }]}
+                    onPress={() => {
+                        global.TRACE_WRITE_PERMISSION = 'PAID_AVAILABLE';
+                        Alert.alert('Trace Test', '유료 작성 가능 상태로 변경됨\n\n한 줄 남기기 화면에 진입해보세요.');
+                    }}
+                    disabled={loading}
+                >
+                    <Text style={styles.buttonText}>PAID_AVAILABLE (유료 추가 작성)</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.button, { backgroundColor: '#f44336' }]}
+                    onPress={() => {
+                        global.TRACE_WRITE_PERMISSION = 'DENIED_COOLDOWN';
+                        Alert.alert('Trace Test', '쿨다운 상태로 변경됨\n\n한 줄 남기기 진입 시 대기 화면이 표시됩니다.');
+                    }}
+                    disabled={loading}
+                >
+                    <Text style={styles.buttonText}>DENIED_COOLDOWN (쿨다운 테스트)</Text>
+                </TouchableOpacity>
+
+                <View style={styles.traceStatusBox}>
+                    <Text style={styles.traceStatusText}>
+                        현재 상태: {(global as any).TRACE_WRITE_PERMISSION || 'FREE_AVAILABLE'}
+                    </Text>
+                </View>
+            </View>
+
+            <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Reset</Text>
                 <TouchableOpacity
                     style={[styles.button, styles.dangerButton]}
@@ -250,5 +305,22 @@ const styles = StyleSheet.create({
     },
     dangerButtonText: {
         color: '#fff',
+    },
+    sectionDesc: {
+        fontSize: 13,
+        color: '#888',
+        marginBottom: 12,
+    },
+    traceStatusBox: {
+        backgroundColor: '#e3f2fd',
+        padding: 12,
+        borderRadius: 8,
+        marginTop: 8,
+    },
+    traceStatusText: {
+        fontSize: 14,
+        color: '#1976d2',
+        fontWeight: '600',
+        textAlign: 'center',
     }
 });
