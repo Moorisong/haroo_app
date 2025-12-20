@@ -256,11 +256,6 @@ export const kakaoAdminLogin = async (req: Request, res: Response, next: NextFun
         // 허용된 Admin 카카오 ID 목록 (콤마로 구분)
         const adminKakaoIds = (process.env.ADMIN_KAKAO_IDS || '').split(',').map(id => id.trim()).filter(Boolean);
 
-        console.log('[kakaoAdminLogin] Processing admin login request');
-        console.log('[kakaoAdminLogin] kakaoClientId:', kakaoClientId);
-        console.log('[kakaoAdminLogin] kakaoAdminRedirectUri:', kakaoAdminRedirectUri);
-        console.log('[kakaoAdminLogin] adminKakaoIds:', adminKakaoIds);
-
         if (!kakaoClientId) {
             res.status(500).json({ message: 'Kakao OAuth configuration is missing' });
             return;
@@ -269,8 +264,6 @@ export const kakaoAdminLogin = async (req: Request, res: Response, next: NextFun
         // 1. Authorization code로 카카오 토큰 획득
         let kakaoAccessToken: string;
         try {
-            console.log('[kakaoAdminLogin] Requesting token from Kakao...');
-
             const tokenParams = new URLSearchParams();
             tokenParams.append('grant_type', 'authorization_code');
             tokenParams.append('client_id', kakaoClientId);
@@ -290,11 +283,9 @@ export const kakaoAdminLogin = async (req: Request, res: Response, next: NextFun
                     },
                 }
             );
-            console.log('[kakaoAdminLogin] Token response received');
             kakaoAccessToken = tokenResponse.data.access_token;
         } catch (error: any) {
-            console.error('[kakaoAdminLogin] Kakao token exchange failed!');
-            console.error('[kakaoAdminLogin] Error response:', JSON.stringify(error.response?.data, null, 2));
+            console.error('[kakaoAdminLogin] Kakao token exchange failed:', error.message);
             res.status(401).json({ message: 'Failed to exchange authorization code' });
             return;
         }
@@ -303,8 +294,6 @@ export const kakaoAdminLogin = async (req: Request, res: Response, next: NextFun
         const kakaoUser = await getKakaoUserInfo(kakaoAccessToken);
         const kakaoId = kakaoUser.id.toString();
         const kakaoNickname = kakaoUser.properties?.nickname || '관리자';
-
-        console.log('[kakaoAdminLogin] Kakao user info:', { kakaoId, kakaoNickname });
 
         // 3. Admin 권한 체크
         if (adminKakaoIds.length > 0 && !adminKakaoIds.includes(kakaoId)) {
@@ -325,8 +314,6 @@ export const kakaoAdminLogin = async (req: Request, res: Response, next: NextFun
             jwtSecret,
             { expiresIn: '24h' }
         );
-
-        console.log('[kakaoAdminLogin] Admin login successful:', kakaoId);
 
         res.status(200).json({
             token: adminToken,
