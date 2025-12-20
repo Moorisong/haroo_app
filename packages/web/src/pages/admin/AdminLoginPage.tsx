@@ -49,15 +49,13 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLogin }) => {
                         카카오 계정으로 로그인
                     </button>
 
-                    {/* 개발용 임시 로그인 버튼 */}
-                    {process.env.NODE_ENV === 'development' && (
-                        <button
-                            className="dev-login-button"
-                            onClick={handleDevLogin}
-                        >
-                            개발용 로그인 (테스트)
-                        </button>
-                    )}
+                    {/* 개발용 임시 로그인 버튼 - 항상 표시 */}
+                    <button
+                        className="dev-login-button"
+                        onClick={handleDevLogin}
+                    >
+                        🔧 개발용 로그인 (테스트)
+                    </button>
                 </div>
 
                 <p className="login-notice">

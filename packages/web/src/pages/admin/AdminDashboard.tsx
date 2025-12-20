@@ -1,31 +1,5 @@
 import React from 'react';
-import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend,
-    ArcElement,
-    PointElement,
-    LineElement,
-} from 'chart.js';
-import { Bar, Doughnut, Line } from 'react-chartjs-2';
 import './AdminDashboard.css';
-
-// Chart.js 등록
-ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend,
-    ArcElement,
-    PointElement,
-    LineElement
-);
 
 // Mock 데이터
 const MOCK_STATS = {
@@ -45,55 +19,45 @@ const MOCK_PAYMENT_RATIO = {
     paid: 22,
 };
 
+// 간단한 막대 차트 컴포넌트 (CSS 기반)
+const SimpleBarChart: React.FC<{ labels: string[]; data: number[] }> = ({ labels, data }) => {
+    const maxValue = Math.max(...data);
+    return (
+        <div className="simple-bar-chart">
+            {data.map((value, index) => (
+                <div key={index} className="bar-item">
+                    <div
+                        className="bar"
+                        style={{ height: `${(value / maxValue) * 150}px` }}
+                    >
+                        <span className="bar-value">{value}</span>
+                    </div>
+                    <span className="bar-label">{labels[index]}</span>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+// 간단한 도넛 차트 컴포넌트 (CSS 기반)
+const SimpleDonutChart: React.FC<{ free: number; paid: number }> = ({ free, paid }) => {
+    return (
+        <div className="simple-donut-chart">
+            <div
+                className="donut"
+                style={{
+                    background: `conic-gradient(#3498db 0deg ${free * 3.6}deg, #e74c3c ${free * 3.6}deg 360deg)`
+                }}
+            >
+                <div className="donut-center">
+                    <span className="donut-total">{free + paid}%</span>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export const AdminDashboard: React.FC = () => {
-    // 일별 메시지 차트 데이터
-    const messageChartData = {
-        labels: MOCK_DAILY_MESSAGES.labels,
-        datasets: [
-            {
-                label: '메시지 수',
-                data: MOCK_DAILY_MESSAGES.data,
-                backgroundColor: 'rgba(102, 126, 234, 0.8)',
-                borderRadius: 6,
-            },
-        ],
-    };
-
-    const messageChartOptions = {
-        responsive: true,
-        plugins: {
-            legend: {
-                display: false,
-            },
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-            },
-        },
-    };
-
-    // 무료/유료 비율 차트 데이터
-    const paymentChartData = {
-        labels: ['무료 작성', '유료 작성'],
-        datasets: [
-            {
-                data: [MOCK_PAYMENT_RATIO.free, MOCK_PAYMENT_RATIO.paid],
-                backgroundColor: ['#3498db', '#e74c3c'],
-                borderWidth: 0,
-            },
-        ],
-    };
-
-    const paymentChartOptions = {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: 'bottom' as const,
-            },
-        },
-    };
-
     return (
         <div className="admin-dashboard">
             {/* 상단 카드 영역 */}
@@ -138,14 +102,17 @@ export const AdminDashboard: React.FC = () => {
                         <button className="filter-btn">월별</button>
                     </div>
                     <div className="chart-container">
-                        <Bar data={messageChartData} options={messageChartOptions} />
+                        <SimpleBarChart
+                            labels={MOCK_DAILY_MESSAGES.labels}
+                            data={MOCK_DAILY_MESSAGES.data}
+                        />
                     </div>
                 </div>
 
                 <div className="chart-card small">
                     <h3>무료/유료 작성 비율</h3>
                     <div className="chart-container doughnut">
-                        <Doughnut data={paymentChartData} options={paymentChartOptions} />
+                        <SimpleDonutChart free={MOCK_PAYMENT_RATIO.free} paid={MOCK_PAYMENT_RATIO.paid} />
                     </div>
                     <div className="payment-stats">
                         <div className="payment-stat">

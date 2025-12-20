@@ -135,3 +135,168 @@
         justify-content: center;
     }
 }
+
+/* 라인 차트 */
+.simple-line-chart {
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+}
+
+.line-chart-area {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    position: relative;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.line-point-wrapper {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    height: 100%;
+    position: relative;
+}
+
+.line-point {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #667eea;
+    border-radius: 50%;
+    border: 3px solid white;
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+}
+
+.point-value {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    font-weight: 600;
+    color: #667eea;
+}
+
+.line-labels {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 8px;
+}
+
+.line-label {
+    font-size: 12px;
+    color: #7f8c8d;
+}
+
+/* 톤 분포 차트 */
+.tone-distribution {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 10px 0;
+}
+
+.tone-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.tone-label {
+    width: 50px;
+    font-size: 13px;
+    color: #2c3e50;
+}
+
+.tone-bar-wrapper {
+    flex: 1;
+    height: 20px;
+    background: #f1f3f4;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.tone-bar {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+.tone-value {
+    width: 40px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2c3e50;
+    text-align: right;
+}
+
+/* 스택 바 차트 */
+.stacked-bar-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    height: 200px;
+    padding: 20px 0;
+    position: relative;
+}
+
+.stacked-bar-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.stacked-bar {
+    display: flex;
+    flex-direction: column-reverse;
+    width: 30px;
+    border-radius: 4px 4px 0 0;
+    overflow: hidden;
+}
+
+.stacked-free {
+    background: #3498db;
+}
+
+.stacked-paid {
+    background: #e74c3c;
+}
+
+.stacked-label {
+    font-size: 11px;
+    color: #7f8c8d;
+}
+
+.stacked-legend {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    gap: 16px;
+}
+
+.stacked-legend span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #2c3e50;
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+}
+
+.legend-dot.free {
+    background: #3498db;
+}
+
+.legend-dot.paid {
+    background: #e74c3c;
+}

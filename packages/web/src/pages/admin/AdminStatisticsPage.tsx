@@ -1,31 +1,5 @@
 import React, { useState } from 'react';
-import {
-    Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend,
-    ArcElement,
-    PointElement,
-    LineElement,
-} from 'chart.js';
-import { Line, Doughnut, Bar } from 'react-chartjs-2';
 import './AdminStatisticsPage.css';
-
-// Chart.js 등록
-ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend,
-    ArcElement,
-    PointElement,
-    LineElement
-);
 
 // Mock 데이터
 const MOCK_WEEKLY_TREND = {
@@ -33,11 +7,15 @@ const MOCK_WEEKLY_TREND = {
     data: [45, 62, 38, 55, 78, 92, 67],
 };
 
-const MOCK_TONE_DISTRIBUTION = {
-    labels: ['행복', '혼잣말', '후기', '위로', '기타', '공포', '분노'],
-    data: [35, 25, 18, 12, 6, 2, 2],
-    colors: ['#f1c40f', '#9b59b6', '#3498db', '#e91e63', '#95a5a6', '#1abc9c', '#e74c3c'],
-};
+const MOCK_TONE_DISTRIBUTION = [
+    { label: '행복', value: 35, color: '#f1c40f' },
+    { label: '혼잣말', value: 25, color: '#9b59b6' },
+    { label: '후기', value: 18, color: '#3498db' },
+    { label: '위로', value: 12, color: '#e91e63' },
+    { label: '기타', value: 6, color: '#95a5a6' },
+    { label: '공포', value: 2, color: '#1abc9c' },
+    { label: '분노', value: 2, color: '#e74c3c' },
+];
 
 const MOCK_PAYMENT_TREND = {
     labels: ['12/14', '12/15', '12/16', '12/17', '12/18', '12/19', '12/20'],
@@ -45,93 +23,84 @@ const MOCK_PAYMENT_TREND = {
     paidData: [5, 7, 6, 7, 13, 12, 9],
 };
 
+// 간단한 라인 차트 (CSS 기반)
+const SimpleLineChart: React.FC<{ labels: string[]; data: number[] }> = ({ labels, data }) => {
+    const maxValue = Math.max(...data);
+    return (
+        <div className="simple-line-chart">
+            <div className="line-chart-area">
+                {data.map((value, index) => (
+                    <div key={index} className="line-point-wrapper">
+                        <div
+                            className="line-point"
+                            style={{ bottom: `${(value / maxValue) * 150}px` }}
+                        >
+                            <span className="point-value">{value}</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div className="line-labels">
+                {labels.map((label, index) => (
+                    <span key={index} className="line-label">{label}</span>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// 톤 분포 바 차트
+const ToneDistributionChart: React.FC = () => {
+    const maxValue = Math.max(...MOCK_TONE_DISTRIBUTION.map(t => t.value));
+    return (
+        <div className="tone-distribution">
+            {MOCK_TONE_DISTRIBUTION.map((tone, index) => (
+                <div key={index} className="tone-item">
+                    <span className="tone-label">{tone.label}</span>
+                    <div className="tone-bar-wrapper">
+                        <div
+                            className="tone-bar"
+                            style={{
+                                width: `${(tone.value / maxValue) * 100}%`,
+                                backgroundColor: tone.color
+                            }}
+                        />
+                    </div>
+                    <span className="tone-value">{tone.value}%</span>
+                </div>
+            ))}
+        </div>
+    );
+};
+
+// 스택 바 차트
+const StackedBarChart: React.FC = () => {
+    const maxValue = Math.max(...MOCK_PAYMENT_TREND.freeData.map((f, i) => f + MOCK_PAYMENT_TREND.paidData[i]));
+    return (
+        <div className="stacked-bar-chart">
+            {MOCK_PAYMENT_TREND.labels.map((label, index) => {
+                const freeHeight = (MOCK_PAYMENT_TREND.freeData[index] / maxValue) * 150;
+                const paidHeight = (MOCK_PAYMENT_TREND.paidData[index] / maxValue) * 150;
+                return (
+                    <div key={index} className="stacked-bar-item">
+                        <div className="stacked-bar">
+                            <div className="stacked-paid" style={{ height: `${paidHeight}px` }} />
+                            <div className="stacked-free" style={{ height: `${freeHeight}px` }} />
+                        </div>
+                        <span className="stacked-label">{label}</span>
+                    </div>
+                );
+            })}
+            <div className="stacked-legend">
+                <span><span className="legend-dot free"></span> 무료</span>
+                <span><span className="legend-dot paid"></span> 유료</span>
+            </div>
+        </div>
+    );
+};
+
 export const AdminStatisticsPage: React.FC = () => {
     const [dateRange, setDateRange] = useState<'week' | 'month' | 'quarter'>('week');
-
-    // 작성 추이 차트
-    const trendChartData = {
-        labels: MOCK_WEEKLY_TREND.labels,
-        datasets: [
-            {
-                label: '메시지 작성',
-                data: MOCK_WEEKLY_TREND.data,
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                fill: true,
-                tension: 0.4,
-            },
-        ],
-    };
-
-    const trendChartOptions = {
-        responsive: true,
-        plugins: {
-            legend: {
-                display: false,
-            },
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-            },
-        },
-    };
-
-    // 톤 태그 분포 차트
-    const toneChartData = {
-        labels: MOCK_TONE_DISTRIBUTION.labels,
-        datasets: [
-            {
-                data: MOCK_TONE_DISTRIBUTION.data,
-                backgroundColor: MOCK_TONE_DISTRIBUTION.colors,
-                borderWidth: 0,
-            },
-        ],
-    };
-
-    const toneChartOptions = {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: 'right' as const,
-            },
-        },
-    };
-
-    // 무료/유료 비교 차트
-    const paymentChartData = {
-        labels: MOCK_PAYMENT_TREND.labels,
-        datasets: [
-            {
-                label: '무료 작성',
-                data: MOCK_PAYMENT_TREND.freeData,
-                backgroundColor: 'rgba(52, 152, 219, 0.8)',
-            },
-            {
-                label: '유료 작성',
-                data: MOCK_PAYMENT_TREND.paidData,
-                backgroundColor: 'rgba(231, 76, 60, 0.8)',
-            },
-        ],
-    };
-
-    const paymentChartOptions = {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: 'top' as const,
-            },
-        },
-        scales: {
-            x: {
-                stacked: true,
-            },
-            y: {
-                stacked: true,
-                beginAtZero: true,
-            },
-        },
-    };
 
     return (
         <div className="admin-statistics-page">
@@ -186,21 +155,24 @@ export const AdminStatisticsPage: React.FC = () => {
                 <div className="chart-card large">
                     <h3>메시지 작성 추이</h3>
                     <div className="chart-container">
-                        <Line data={trendChartData} options={trendChartOptions} />
+                        <SimpleLineChart
+                            labels={MOCK_WEEKLY_TREND.labels}
+                            data={MOCK_WEEKLY_TREND.data}
+                        />
                     </div>
                 </div>
 
                 <div className="chart-card">
                     <h3>톤 태그 분포</h3>
-                    <div className="chart-container doughnut">
-                        <Doughnut data={toneChartData} options={toneChartOptions} />
+                    <div className="chart-container">
+                        <ToneDistributionChart />
                     </div>
                 </div>
 
                 <div className="chart-card large">
                     <h3>무료/유료 작성 비교</h3>
                     <div className="chart-container">
-                        <Bar data={paymentChartData} options={paymentChartOptions} />
+                        <StackedBarChart />
                     </div>
                 </div>
             </div>

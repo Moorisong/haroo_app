@@ -237,6 +237,112 @@ export const kakaoCallback = async (req: Request, res: Response, next: NextFunct
     }
 };
 
+// @desc    Kakao Admin Login (Web Admin Dashboard용)
+// @route   POST /auth/kakao/admin
+// @access  Public
+export const kakaoAdminLogin = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { code } = req.body;
+
+        if (!code || typeof code !== 'string') {
+            res.status(400).json({ message: 'Authorization code is required' });
+            return;
+        }
+
+        const kakaoClientId = process.env.KAKAO_CLIENT_ID;
+        // Admin용 redirect URI (web 환경)
+        const kakaoAdminRedirectUri = process.env.KAKAO_ADMIN_REDIRECT_URI || 'http://localhost:3000/admin/callback';
+        const kakaoClientSecret = process.env.KAKAO_CLIENT_SECRET;
+        // 허용된 Admin 카카오 ID 목록 (콤마로 구분)
+        const adminKakaoIds = (process.env.ADMIN_KAKAO_IDS || '').split(',').map(id => id.trim()).filter(Boolean);
+
+        console.log('[kakaoAdminLogin] Processing admin login request');
+        console.log('[kakaoAdminLogin] kakaoClientId:', kakaoClientId);
+        console.log('[kakaoAdminLogin] kakaoAdminRedirectUri:', kakaoAdminRedirectUri);
+        console.log('[kakaoAdminLogin] adminKakaoIds:', adminKakaoIds);
+
+        if (!kakaoClientId) {
+            res.status(500).json({ message: 'Kakao OAuth configuration is missing' });
+            return;
+        }
+
+        // 1. Authorization code로 카카오 토큰 획득
+        let kakaoAccessToken: string;
+        try {
+            console.log('[kakaoAdminLogin] Requesting token from Kakao...');
+
+            const tokenParams = new URLSearchParams();
+            tokenParams.append('grant_type', 'authorization_code');
+            tokenParams.append('client_id', kakaoClientId);
+            tokenParams.append('redirect_uri', kakaoAdminRedirectUri);
+            tokenParams.append('code', code);
+
+            if (kakaoClientSecret) {
+                tokenParams.append('client_secret', kakaoClientSecret);
+            }
+
+            const tokenResponse = await axios.post(
+                'https://kauth.kakao.com/oauth/token',
+                tokenParams.toString(),
+                {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+                    },
+                }
+            );
+            console.log('[kakaoAdminLogin] Token response received');
+            kakaoAccessToken = tokenResponse.data.access_token;
+        } catch (error: any) {
+            console.error('[kakaoAdminLogin] Kakao token exchange failed!');
+            console.error('[kakaoAdminLogin] Error response:', JSON.stringify(error.response?.data, null, 2));
+            res.status(401).json({ message: 'Failed to exchange authorization code' });
+            return;
+        }
+
+        // 2. 카카오 사용자 정보 조회
+        const kakaoUser = await getKakaoUserInfo(kakaoAccessToken);
+        const kakaoId = kakaoUser.id.toString();
+        const kakaoNickname = kakaoUser.properties?.nickname || '관리자';
+
+        console.log('[kakaoAdminLogin] Kakao user info:', { kakaoId, kakaoNickname });
+
+        // 3. Admin 권한 체크
+        if (adminKakaoIds.length > 0 && !adminKakaoIds.includes(kakaoId)) {
+            console.warn('[kakaoAdminLogin] Unauthorized admin access attempt:', kakaoId);
+            res.status(403).json({ message: '관리자 권한이 없습니다. 허용된 계정으로 로그인해주세요.' });
+            return;
+        }
+
+        // 4. JWT 발급 (Admin용 - 24시간 유효)
+        const jwtSecret = process.env.JWT_SECRET || 'fallback_secret';
+        const adminToken = jwt.sign(
+            {
+                kakaoId,
+                nickname: kakaoNickname,
+                role: 'admin',
+                tokenType: 'admin_access'
+            },
+            jwtSecret,
+            { expiresIn: '24h' }
+        );
+
+        console.log('[kakaoAdminLogin] Admin login successful:', kakaoId);
+
+        res.status(200).json({
+            token: adminToken,
+            user: {
+                kakaoId,
+                name: kakaoNickname,
+                email: `admin_${kakaoId}@haroo.site`,
+                role: 'admin'
+            }
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc    Refresh Access Token
 // @route   POST /auth/refresh
 // @access  Public (with Refresh Token)

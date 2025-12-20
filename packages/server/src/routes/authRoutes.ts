@@ -1,5 +1,5 @@
 import express from 'express';
-import { kakaoLogin, kakaoCallback } from '../controllers/authController';
+import { kakaoLogin, kakaoCallback, kakaoAdminLogin } from '../controllers/authController';
 
 const router = express.Router();
 
@@ -7,5 +7,7 @@ const router = express.Router();
 router.post('/kakao', kakaoLogin);
 // GET /auth/kakao (Server Redirect 방식)
 router.get('/kakao', kakaoCallback);
+// POST /auth/kakao/admin (Web Admin Dashboard 로그인)
+router.post('/kakao/admin', kakaoAdminLogin);
 
 export default router;

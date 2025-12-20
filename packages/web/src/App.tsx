@@ -29,6 +29,61 @@ function App() {
     return () => window.removeEventListener('popstate', handleLocationChange);
   }, []);
 
+  // 카카오 OAuth 콜백 처리
+  useEffect(() => {
+    const handleKakaoCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+
+      // /admin/callback 경로이고 code가 있는 경우
+      if (window.location.pathname === '/admin/callback' && code) {
+        console.log('Kakao OAuth callback received, code:', code.substring(0, 20) + '...');
+
+        try {
+          // 서버에 code를 전송하여 토큰 교환 요청
+          const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/auth/kakao/admin`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ code }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Kakao login successful:', data);
+
+            // 토큰 및 사용자 정보 저장
+            localStorage.setItem('admin_token', data.token || 'kakao_admin_token');
+            localStorage.setItem('admin_user', JSON.stringify(data.user || { name: '관리자' }));
+
+            // 로그인 상태 업데이트 및 대시보드로 이동
+            setIsAdminLoggedIn(true);
+            window.history.replaceState({}, '', '/admin');
+            setCurrentPath('/admin');
+          } else {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Kakao login failed:', response.status, errorData);
+            alert(`로그인 실패: ${errorData.message || '권한이 없거나 서버 오류가 발생했습니다.'}`);
+
+            // 로그인 페이지로 이동
+            window.history.replaceState({}, '', '/admin');
+            setCurrentPath('/admin');
+          }
+        } catch (error) {
+          console.error('Kakao login error:', error);
+          alert('로그인 처리 중 오류가 발생했습니다. 네트워크를 확인해주세요.');
+
+          // 로그인 페이지로 이동
+          window.history.replaceState({}, '', '/admin');
+          setCurrentPath('/admin');
+        }
+      }
+    };
+
+    handleKakaoCallback();
+  }, []);
+
   const handleAdminLogin = () => {
     setIsAdminLoggedIn(true);
     // 대시보드로 이동
