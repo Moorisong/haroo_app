@@ -10,6 +10,7 @@ import {
     ActivityIndicator,
     FlatList,
     Modal,
+    Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -143,6 +144,30 @@ export const TraceScreen: React.FC = () => {
         }
     };
 
+    // 삭제 (본인 글)
+    const handleDelete = async (messageId: string) => {
+        Alert.alert(
+            '한 줄 삭제',
+            '이 글을 삭제하시겠어요?',
+            [
+                { text: '취소', style: 'cancel' },
+                {
+                    text: '삭제',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await traceService.deleteMessage(messageId);
+                            setMessages(prev => prev.filter(m => m._id !== messageId));
+                        } catch (error) {
+                            console.error('Delete failed:', error);
+                            Alert.alert('오류', '삭제에 실패했어요.');
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
     // 시간 포맷
     const formatTime = (date: Date) => {
         const now = new Date();
@@ -192,12 +217,22 @@ export const TraceScreen: React.FC = () => {
                         </Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity
-                        style={[styles.actionButton, { marginLeft: -SPACING.xs }]}
-                        onPress={() => handleReport(item._id)}
-                    >
-                        <Feather name="flag" size={14} color={COLORS.textTertiary} />
-                    </TouchableOpacity>
+                    {/* 본인 글이면 삭제, 아니면 신고 */}
+                    {item.isMine ? (
+                        <TouchableOpacity
+                            style={[styles.actionButton, { marginLeft: -SPACING.xs }]}
+                            onPress={() => handleDelete(item._id)}
+                        >
+                            <Feather name="trash-2" size={14} color={COLORS.textTertiary} />
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity
+                            style={[styles.actionButton, { marginLeft: -SPACING.xs }]}
+                            onPress={() => handleReport(item._id)}
+                        >
+                            <Feather name="flag" size={14} color={COLORS.textTertiary} />
+                        </TouchableOpacity>
+                    )}
                 </View>
             </View>
         );

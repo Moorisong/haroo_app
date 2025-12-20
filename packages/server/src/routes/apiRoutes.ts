@@ -18,6 +18,7 @@ router.get('/messages/payment-ratio', protect, async (req, res) => {
 router.get('/messages/:id', protect, traceController.getMessage);
 router.post('/messages/:id/like', protect, traceController.likeMessage);
 router.delete('/messages/:id/like', protect, traceController.unlikeMessage);
+router.delete('/messages/:id', protect, traceController.deleteMessage);
 router.post('/messages/:id/report', protect, traceController.reportMessage);
 router.post('/messages/:id/remove', protect, adminController.removeMessageForce); // Admin only? Spec says "운영자 전용" just below it, but endpoint is public? Assuming admin middleware needed later.
 
@@ -28,6 +29,12 @@ router.get('/location/current', protect, traceController.getLocationStatus);
 router.get('/time', (req, res) => {
     res.json({ timeState: 'WITHIN_LIFETIME' }); // Mock
 });
+
+// --- Payment (Mock) ---
+router.post('/payment/mock', protect, traceController.mockPayment);
+
+// --- Test Tools ---
+router.post('/test-tools/seed-messages', protect, traceController.seedMessages);
 
 // --- Sync ---
 router.post('/sync', protect, (req, res) => {
@@ -45,13 +52,64 @@ router.get('/admin/statistics/users', protect, adminController.getAdminStatsUser
 
 // --- Users (Trace specific) ---
 import User from '../models/User';
+import { getToday } from '../utils/testMode';
 
 router.get('/users/me', protect, async (req, res) => {
     const user = (req as any).user;
-    // Calculate permissions
+    const now = getToday();
+
+    // Debug logging
+    console.log('[/api/users/me] Debug:', {
+        now: now.toISOString(),
+        tracePassExpiresAt: user.tracePassExpiresAt,
+        lastTraceAt: user.lastTraceAt,
+        traceDailyCount: user.traceDailyCount
+    });
+
+    // Calculate writePermission
+    const hasValidPass = user.tracePassExpiresAt && new Date(user.tracePassExpiresAt) > now;
+    const cooldownMs = 2 * 60 * 60 * 1000; // 2 Hours
+
+    console.log('[/api/users/me] hasValidPass:', hasValidPass);
+
+    let writePermission = 'FREE_AVAILABLE';
+    let nextAvailableAt = null;
+
+    if (hasValidPass) {
+        // Paid user - check cooldown
+        if (user.lastTraceAt) {
+            const diff = now.getTime() - user.lastTraceAt.getTime();
+            if (diff < cooldownMs) {
+                writePermission = 'DENIED_COOLDOWN';
+                nextAvailableAt = new Date(user.lastTraceAt.getTime() + cooldownMs);
+            } else {
+                writePermission = 'PAID_AVAILABLE';
+            }
+        } else {
+            writePermission = 'PAID_AVAILABLE';
+        }
+    } else {
+        // Free user - check daily limit
+        const lastDate = user.lastTraceAt ? user.lastTraceAt.getDate() : -1;
+        const todayDate = now.getDate();
+
+        let dailyCount = user.traceDailyCount || 0;
+        if (lastDate !== todayDate) {
+            dailyCount = 0; // New day, reset
+        }
+
+        if (dailyCount >= 1) {
+            writePermission = 'FREE_USED';
+        } else {
+            writePermission = 'FREE_AVAILABLE';
+        }
+    }
+
     res.json({
         userStatus: user.status,
-        writePermission: 'FREE_AVAILABLE', // Mock calculation
+        writePermission,
+        nextAvailableAt,
+        tracePassExpiresAt: user.tracePassExpiresAt,
         reportInfluence: user.reportInfluence || 1.0
     });
 });

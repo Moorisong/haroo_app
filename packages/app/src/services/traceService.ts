@@ -19,6 +19,7 @@ export interface TraceMessage {
     createdAt: string;
     expiresAt: string;
     isLiked?: boolean; // Client side logic might need this or track separately
+    isMine?: boolean;
 }
 
 export interface TraceListResponse {
@@ -69,8 +70,24 @@ const traceService = {
         return response.data;
     },
 
+    // 삭제
+    deleteMessage: async (id: string) => {
+        const response = await api.delete(`/api/messages/${id}`);
+        return response.data;
+    },
+
     // 사용자 상태 조회 (작성 권한 등)
     getUserStatus: async (): Promise<UserStatusResponse> => {
+        // Test Tool Hook - allows test tools to force specific states
+        if ((global as any).TRACE_WRITE_PERMISSION) {
+            console.log('[TestMode] Using forced permission:', (global as any).TRACE_WRITE_PERMISSION);
+            return {
+                userStatus: 'ACTIVE',
+                writePermission: (global as any).TRACE_WRITE_PERMISSION,
+                reportInfluence: 1.0
+            };
+        }
+
         const response = await api.get('/api/users/me');
         return response.data;
     },
@@ -86,6 +103,22 @@ const traceService = {
     // 시간/동기화
     getTimeState: async () => {
         const response = await api.get('/api/time');
+        return response.data;
+    },
+
+    // 개발용 결제 Mock
+    mockPayment: async (type: 'single' | 'threeDay') => {
+        // [Fix] Clear test override when payment is made
+        // This ensures real server state takes effect after payment
+        delete (global as any).TRACE_WRITE_PERMISSION;
+
+        const response = await api.post('/api/payment/mock', { type });
+        return response.data;
+    },
+
+    // 테스트 메시지 생성 (타인 글 5개)
+    seedTestMessages: async (lat: number, lng: number) => {
+        const response = await api.post('/api/test-tools/seed-messages', { lat, lng });
         return response.data;
     }
 };
