@@ -4,6 +4,8 @@
 import cron from 'node-cron';
 import Message from '../models/Message';
 import MessageMode from '../models/MessageMode';
+import Trace from '../models/Trace';
+import TraceReport from '../models/TraceReport';
 import { getToday } from '../utils/testMode';
 import { sendPushNotification, PUSH_MESSAGES } from '../services/pushService';
 
@@ -126,6 +128,28 @@ const runCleanup = async () => {
                 );
             }
             console.log(`[PENDING EXPIRE] 신청 만료 처리 완료`);
+        }
+
+        // 6. [Trace] 72시간 경과 메시지 삭제 (여기, 한 줄)
+        // expiresAt이 현재 시간보다 이전인 메시지 = 만료됨
+        const expiredTraces = await Trace.find({
+            expiresAt: { $lt: now }
+        }).select('_id');
+
+        if (expiredTraces.length > 0) {
+            const traceIds = expiredTraces.map(t => t._id);
+
+            // 관련 신고 데이터 먼저 삭제
+            const reportDeleteResult = await TraceReport.deleteMany({
+                traceId: { $in: traceIds }
+            });
+            console.log(`[TRACE CLEANUP] ${reportDeleteResult.deletedCount}개 신고 삭제됨`);
+
+            // Trace 메시지 삭제 (likedBy 등 내장 데이터도 함께 삭제됨)
+            const traceDeleteResult = await Trace.deleteMany({
+                _id: { $in: traceIds }
+            });
+            console.log(`[TRACE CLEANUP] ${traceDeleteResult.deletedCount}개 한줄 메시지 삭제됨`);
         }
 
         console.log(`[${new Date().toISOString()}] 메시지 정리 작업 완료`);
