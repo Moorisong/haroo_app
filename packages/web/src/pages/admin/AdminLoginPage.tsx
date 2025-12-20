@@ -19,14 +19,6 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLogin }) => {
         window.location.href = kakaoAuthUrl;
     };
 
-    // 개발용 임시 로그인
-    const handleDevLogin = () => {
-        // 개발 환경에서만 사용
-        localStorage.setItem('admin_token', 'dev_admin_token');
-        localStorage.setItem('admin_user', JSON.stringify({ name: '관리자', email: 'admin@haroo.site' }));
-        onLogin();
-    };
-
     return (
         <div className="admin-login-page">
             <div className="login-container">
@@ -48,20 +40,12 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onLogin }) => {
                         />
                         카카오 계정으로 로그인
                     </button>
-
-                    {/* 개발용 임시 로그인 버튼 - 항상 표시 */}
-                    <button
-                        className="dev-login-button"
-                        onClick={handleDevLogin}
-                    >
-                        🔧 개발용 로그인 (테스트)
-                    </button>
                 </div>
 
                 <p className="login-notice">
                     ⚠️ 권한이 있는 관리자만 접근할 수 있습니다
                 </p>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
