@@ -20,6 +20,7 @@ import { useNavigation } from '@react-navigation/native';
 
 import { COLORS, FONT_SIZES, SPACING, FONTS } from '../constants/theme';
 import { BubbleBackground } from '../components/BubbleBackground';
+import traceService from '../services/traceService';
 
 // 톤 태그 목록
 const TONE_TAGS = [
@@ -34,19 +35,10 @@ const TONE_TAGS = [
 
 const MAX_LENGTH = 60;
 
-// 작성 권한 상태 (Mock)
-type WritePermission = 'FREE_AVAILABLE' | 'FREE_USED' | 'PAID_AVAILABLE' | 'DENIED_COOLDOWN';
+import LocationService, { LocationState } from '../services/LocationService';
 
-// Global 타입 확장
-declare global {
-    var TRACE_WRITE_PERMISSION: WritePermission | undefined;
-}
-
-// Mock: 현재 작성 권한 상태 (Test Tools에서 변경 가능)
-const getMockWritePermission = (): WritePermission => {
-    return global.TRACE_WRITE_PERMISSION || 'FREE_AVAILABLE';
-};
-const MOCK_COOLDOWN_END_TIME = new Date(Date.now() + 1000 * 60 * 60); // 1시간 후
+// 작성 권한 상태 타입 (Service에서 가져옴 - or reuse string)
+// Note: Service return type is string union.
 
 export const TraceWriteScreen: React.FC = () => {
     const navigation = useNavigation<any>();
@@ -54,9 +46,12 @@ export const TraceWriteScreen: React.FC = () => {
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
     // 작성 권한 상태
-    const [writePermission, setWritePermission] = useState<WritePermission>(getMockWritePermission());
+    const [writePermission, setWritePermission] = useState<string>('FREE_AVAILABLE');
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [cooldownEndTime, setCooldownEndTime] = useState<Date | null>(null);
+
+    // Location State
+    const [locationState, setLocationState] = useState<LocationState | null>(null);
 
     // Toast state
     const [showToast, setShowToast] = useState(false);
@@ -69,15 +64,35 @@ export const TraceWriteScreen: React.FC = () => {
     }, []);
 
     const checkWritePermission = async () => {
-        // TODO: 실제 API 호출로 교체
-        // Mock: 테스트용으로 MOCK_WRITE_PERMISSION 값을 변경하여 테스트
-        const fetchedPermission: WritePermission = getMockWritePermission();
-        setWritePermission(fetchedPermission);
+        try {
+            // 위치 확인 (없으면 권한 요청)
+            const loc = await LocationService.getCurrentLocation();
+            setLocationState(loc);
 
-        if (fetchedPermission === 'FREE_USED') {
-            setShowPaymentModal(true);
-        } else if (fetchedPermission === 'DENIED_COOLDOWN') {
-            setCooldownEndTime(MOCK_COOLDOWN_END_TIME);
+            if (loc.errorMsg === 'PERMISSION_DENIED') {
+                LocationService.showPermissionAlert();
+                navigation.goBack();
+                return;
+            }
+
+            if (!loc.isInKorea) {
+                LocationService.showCountryRestrictionAlert();
+                navigation.goBack();
+                return;
+            }
+
+            const status = await traceService.getUserStatus();
+            setWritePermission(status.writePermission);
+
+            if (status.writePermission === 'FREE_USED') {
+                setShowPaymentModal(true);
+            } else if (status.writePermission === 'DENIED_COOLDOWN') {
+                // Server should return cooldown time ideally, but for now mocked relative to check
+                // Or maybe we should add cooldown info to getUserStatus response
+                setCooldownEndTime(new Date(Date.now() + 1000 * 60 * 60));
+            }
+        } catch (error) {
+            console.error('Permission check failed:', error);
         }
     };
 
@@ -101,7 +116,7 @@ export const TraceWriteScreen: React.FC = () => {
         ]).start(() => setShowToast(false));
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         // 톤 태그 선택 확인
         if (!selectedTag) {
             showToastMsg('어떤 이야기인지 선택해주세요.');
@@ -114,10 +129,24 @@ export const TraceWriteScreen: React.FC = () => {
             return;
         }
 
-        // TODO: API 호출
-        console.log('Submit:', { content, tag: selectedTag });
-        showToastMsg('한 줄이 남겨졌어요.');
-        setTimeout(() => navigation.goBack(), 1000);
+        // 위치 정보 확인
+        if (!locationState || !locationState.isInKorea) {
+            showToastMsg('위치 정보를 확인할 수 없어요.');
+            return;
+        }
+
+        try {
+            await traceService.createMessage(content, selectedTag, locationState.lat, locationState.lng);
+            showToastMsg('한 줄이 남겨졌어요.');
+            setTimeout(() => {
+                // Refresh list on back?
+                // Ideally navigation params or global event.
+                navigation.goBack();
+            }, 1000);
+        } catch (error) {
+            console.error('Create message failed:', error);
+            showToastMsg('작성에 실패했어요.');
+        }
     };
 
     const handlePayment = (option: 'single' | 'threeDay') => {

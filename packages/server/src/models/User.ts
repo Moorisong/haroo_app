@@ -14,6 +14,12 @@ export interface IUser extends Document {
     refreshTokenExpiresAt?: Date; // 리프레시 토큰 만료 시간
     createdAt: Date;
     updatedAt: Date;
+
+    // Trace (여기 한 줄) 관련
+    lastTraceAt?: Date;
+    traceDailyCount?: number; // 오늘 작성한 횟수
+    tracePassExpiresAt?: Date; // 유료 패스 만료일
+    reportInfluence?: number; // 신고 신뢰도 (기본 1.0)
 }
 
 const UserSchema: Schema = new Schema({
@@ -58,6 +64,12 @@ const UserSchema: Schema = new Schema({
         type: Date,
         required: false, // 로그인 시에만 생성
     },
+
+    // Trace Fields
+    lastTraceAt: { type: Date },
+    traceDailyCount: { type: Number, default: 0 },
+    tracePassExpiresAt: { type: Date },
+    reportInfluence: { type: Number, default: 1.0 },
 }, {
     timestamps: true
 });

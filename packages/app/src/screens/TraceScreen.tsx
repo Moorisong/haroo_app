@@ -10,13 +10,14 @@ import {
     ActivityIndicator,
     FlatList,
     Modal,
-    Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import { COLORS, FONT_SIZES, SPACING, FONTS } from '../constants/theme';
 import { BubbleBackground } from '../components/BubbleBackground';
+import traceService, { TraceMessage } from '../services/traceService';
+import LocationService, { LocationState } from '../services/LocationService';
 
 // 톤 태그 매핑
 const TONE_TAG_MAP: Record<string, { emoji: string; label: string }> = {
@@ -28,21 +29,6 @@ const TONE_TAG_MAP: Record<string, { emoji: string; label: string }> = {
     comfort: { emoji: '🤍', label: '위로' },
     other: { emoji: '🪶', label: '기타' },
 };
-
-// Mock 타입 정의
-interface TraceMessage {
-    id: string;
-    content: string;
-    toneTag: string;
-    likeCount: number;
-    isLiked: boolean;
-    createdAt: Date;
-}
-
-// Mock 데이터 (나중에 API로 교체) - 빈 상태 테스트용
-const MOCK_MESSAGES: TraceMessage[] = [];
-
-const PAGE_SIZE = 10;
 
 // 빈 지역 문구 목록
 const EMPTY_MESSAGES = [
@@ -61,6 +47,9 @@ export const TraceScreen: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
 
+    // Location State
+    const [locationState, setLocationState] = useState<LocationState | null>(null);
+
     // 신고 모달 상태
     const [reportModalVisible, setReportModalVisible] = useState(false);
     const [reportTargetId, setReportTargetId] = useState<string | null>(null);
@@ -72,39 +61,68 @@ export const TraceScreen: React.FC = () => {
     );
 
     // 데이터 로드
+    const loadMessages = useCallback(async (loc: LocationState, page: number, isRefresh = false) => {
+        if (!loc.isInKorea) return;
+
+        if (isRefresh) setIsLoading(true);
+        try {
+            const response = await traceService.getMessages(loc.lat, loc.lng, page);
+            setMessages(prev => isRefresh ? response.messages : [...prev, ...response.messages]);
+        } catch (error) {
+            console.error('Failed to load traces:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // 초기 진입: 위치 확인 및 로드
+    const checkLocationAndLoad = useCallback(async () => {
+        setIsLoading(true);
+        const loc = await LocationService.getCurrentLocation();
+        setLocationState(loc);
+
+        if (loc.errorMsg === 'PERMISSION_DENIED') {
+            LocationService.showPermissionAlert();
+            setIsLoading(false);
+            return;
+        }
+
+        if (!loc.isInKorea) {
+            setIsLoading(false);
+            return;
+        }
+
+        // 위치 확인 후 첫 페이지 로드
+        setCurrentPage(1);
+        loadMessages(loc, 1, true);
+    }, [loadMessages]);
+
     useFocusEffect(
         useCallback(() => {
-            const loadMessages = async () => {
-                setIsLoading(true);
-                // TODO: 실제 API 호출로 교체
-                await new Promise(resolve => setTimeout(resolve, 500));
-                setMessages(MOCK_MESSAGES);
-                setIsLoading(false);
-            };
-            loadMessages();
-        }, [])
-    );
-
-    // 페이지네이션 계산
-    const totalPages = Math.ceil(messages.length / PAGE_SIZE);
-    const paginatedMessages = messages.slice(
-        (currentPage - 1) * PAGE_SIZE,
-        currentPage * PAGE_SIZE
+            checkLocationAndLoad();
+        }, [checkLocationAndLoad])
     );
 
     // 좋아요 토글
-    const handleLike = (messageId: string) => {
-        setMessages(prev => prev.map(msg => {
-            if (msg.id === messageId) {
-                return {
-                    ...msg,
-                    isLiked: !msg.isLiked,
-                    likeCount: msg.isLiked ? msg.likeCount - 1 : msg.likeCount + 1,
-                };
+    const handleLike = async (messageId: string) => {
+        try {
+            // Optimistic update
+            const msg = messages.find(m => m._id === messageId);
+            if (!msg) return;
+
+            const isLikedRaw = (msg as any).isLiked;
+            const isLiked = isLikedRaw === true;
+
+            if (isLiked) {
+                const res = await traceService.unlikeMessage(messageId);
+                setMessages(prev => prev.map(m => m._id === messageId ? { ...m, likeCount: res.likeCount, isLiked: false } : m));
+            } else {
+                const res = await traceService.likeMessage(messageId);
+                setMessages(prev => prev.map(m => m._id === messageId ? { ...m, likeCount: res.likeCount, isLiked: true } : m));
             }
-            return msg;
-        }));
-        // TODO: API 호출
+        } catch (error) {
+            console.error(error);
+        }
     };
 
     // 신고 모달 열기
@@ -114,12 +132,15 @@ export const TraceScreen: React.FC = () => {
     };
 
     // 신고 제출
-    const submitReport = (reason: string) => {
-        // TODO: API 호출
-        console.log('Report:', { messageId: reportTargetId, reason });
-        setReportModalVisible(false);
-        setReportTargetId(null);
-        // 토스트 또는 알림 표시 가능
+    const submitReport = async (reason: string) => {
+        if (!reportTargetId) return;
+        try {
+            await traceService.reportMessage(reportTargetId, reason);
+            setReportModalVisible(false);
+            setReportTargetId(null);
+        } catch (error) {
+            console.error(error);
+        }
     };
 
     // 시간 포맷
@@ -145,7 +166,7 @@ export const TraceScreen: React.FC = () => {
                         <Text style={styles.tagEmoji}>{tag.emoji}</Text>
                         <Text style={styles.tagLabel}>{tag.label}</Text>
                     </View>
-                    <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
+                    <Text style={styles.messageTime}>{formatTime(new Date(item.createdAt))}</Text>
                 </View>
 
                 {/* 내용 */}
@@ -155,7 +176,7 @@ export const TraceScreen: React.FC = () => {
                 <View style={styles.messageActions}>
                     <TouchableOpacity
                         style={styles.actionButton}
-                        onPress={() => handleLike(item.id)}
+                        onPress={() => handleLike(item._id)}
                     >
                         <Feather
                             name={item.isLiked ? "heart" : "heart"}
@@ -173,7 +194,7 @@ export const TraceScreen: React.FC = () => {
 
                     <TouchableOpacity
                         style={[styles.actionButton, { marginLeft: -SPACING.xs }]}
-                        onPress={() => handleReport(item.id)}
+                        onPress={() => handleReport(item._id)}
                     >
                         <Feather name="flag" size={14} color={COLORS.textTertiary} />
                     </TouchableOpacity>
@@ -182,42 +203,27 @@ export const TraceScreen: React.FC = () => {
         );
     };
 
-    // 빈 상태 렌더
-    const renderEmptyState = () => (
-        <View style={styles.emptyContainer}>
-            <Feather name="map-pin" size={48} color={COLORS.accentMuted} />
-            <Text style={styles.emptyText}>{randomEmptyMessage}</Text>
-        </View>
-    );
-
-    // 페이지네이션 컨트롤
-    const renderPagination = () => {
-        if (totalPages <= 1) return null;
+    // 빈 상태 렌더 (국가 제한 포함)
+    const renderEmptyState = () => {
+        if (locationState && !locationState.isInKorea && !locationState.errorMsg) {
+            return (
+                <View style={styles.emptyContainer}>
+                    <Feather name="globe" size={48} color={COLORS.accentMuted} />
+                    <Text style={styles.emptyText}>{"현재 서비스는 대한민국에서만\n이용할 수 있어요."}</Text>
+                </View>
+            );
+        }
 
         return (
-            <View style={styles.paginationContainer}>
-                <TouchableOpacity
-                    style={[styles.pageButton, currentPage === 1 && styles.pageButtonDisabled]}
-                    onPress={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                >
-                    <Feather name="chevron-left" size={18} color={currentPage === 1 ? COLORS.textTertiary : COLORS.textPrimary} />
-                    <Text style={[styles.pageButtonText, currentPage === 1 && styles.pageButtonTextDisabled]}>이전</Text>
-                </TouchableOpacity>
-
-                <Text style={styles.pageIndicator}>{currentPage} / {totalPages}</Text>
-
-                <TouchableOpacity
-                    style={[styles.pageButton, currentPage === totalPages && styles.pageButtonDisabled]}
-                    onPress={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                >
-                    <Text style={[styles.pageButtonText, currentPage === totalPages && styles.pageButtonTextDisabled]}>다음</Text>
-                    <Feather name="chevron-right" size={18} color={currentPage === totalPages ? COLORS.textTertiary : COLORS.textPrimary} />
-                </TouchableOpacity>
+            <View style={styles.emptyContainer}>
+                <Feather name="map-pin" size={48} color={COLORS.accentMuted} />
+                <Text style={styles.emptyText}>{randomEmptyMessage}</Text>
             </View>
         );
     };
+
+    // 페이지네이션 컨트롤 (Server-side pagination: use Infinite Scroll or Load More in future)
+    const renderPagination = () => null;
 
     return (
         <View style={styles.container}>
@@ -248,9 +254,9 @@ export const TraceScreen: React.FC = () => {
                     </View>
                 ) : (
                     <FlatList
-                        data={paginatedMessages}
+                        data={messages}
                         renderItem={renderMessageItem}
-                        keyExtractor={item => item.id}
+                        keyExtractor={item => item._id}
                         contentContainerStyle={styles.listContent}
                         showsVerticalScrollIndicator={false}
                         ListFooterComponent={renderPagination}
