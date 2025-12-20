@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     View,
     Text,
@@ -6,10 +6,12 @@ import {
     SafeAreaView,
     StatusBar,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     TextInput,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    Modal,
     Animated,
     Easing,
 } from 'react-native';
@@ -32,15 +34,52 @@ const TONE_TAGS = [
 
 const MAX_LENGTH = 60;
 
+// 작성 권한 상태 (Mock)
+type WritePermission = 'FREE_AVAILABLE' | 'FREE_USED' | 'PAID_AVAILABLE' | 'DENIED_COOLDOWN';
+
+// Global 타입 확장
+declare global {
+    var TRACE_WRITE_PERMISSION: WritePermission | undefined;
+}
+
+// Mock: 현재 작성 권한 상태 (Test Tools에서 변경 가능)
+const getMockWritePermission = (): WritePermission => {
+    return global.TRACE_WRITE_PERMISSION || 'FREE_AVAILABLE';
+};
+const MOCK_COOLDOWN_END_TIME = new Date(Date.now() + 1000 * 60 * 60); // 1시간 후
+
 export const TraceWriteScreen: React.FC = () => {
     const navigation = useNavigation<any>();
     const [content, setContent] = useState('');
     const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
+    // 작성 권한 상태
+    const [writePermission, setWritePermission] = useState<WritePermission>(getMockWritePermission());
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [cooldownEndTime, setCooldownEndTime] = useState<Date | null>(null);
+
     // Toast state
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const toastOpacity = useRef(new Animated.Value(0)).current;
+
+    // 진입 시 작성 권한 체크
+    useEffect(() => {
+        checkWritePermission();
+    }, []);
+
+    const checkWritePermission = async () => {
+        // TODO: 실제 API 호출로 교체
+        // Mock: 테스트용으로 MOCK_WRITE_PERMISSION 값을 변경하여 테스트
+        const fetchedPermission: WritePermission = getMockWritePermission();
+        setWritePermission(fetchedPermission);
+
+        if (fetchedPermission === 'FREE_USED') {
+            setShowPaymentModal(true);
+        } else if (fetchedPermission === 'DENIED_COOLDOWN') {
+            setCooldownEndTime(MOCK_COOLDOWN_END_TIME);
+        }
+    };
 
     const showToastMsg = (message: string) => {
         setToastMessage(message);
@@ -77,8 +116,62 @@ export const TraceWriteScreen: React.FC = () => {
 
         // TODO: API 호출
         console.log('Submit:', { content, tag: selectedTag });
-        navigation.goBack();
+        showToastMsg('한 줄이 남겨졌어요.');
+        setTimeout(() => navigation.goBack(), 1000);
     };
+
+    const handlePayment = (option: 'single' | 'threeDay') => {
+        // TODO: 실제 결제 로직
+        console.log('Payment:', option);
+        setShowPaymentModal(false);
+        setWritePermission('PAID_AVAILABLE');
+        showToastMsg('결제가 완료되었습니다.');
+    };
+
+    const formatCooldownTime = () => {
+        if (!cooldownEndTime) return '';
+        const diff = cooldownEndTime.getTime() - Date.now();
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        return `${hours}시간 ${minutes}분`;
+    };
+
+    // 쿨다운 상태 화면
+    if (writePermission === 'DENIED_COOLDOWN') {
+        return (
+            <View style={styles.container}>
+                <BubbleBackground />
+                <SafeAreaView style={styles.safeArea}>
+                    <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+
+                    <View style={styles.header}>
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={() => navigation.goBack()}
+                        >
+                            <Feather name="x" size={22} color={COLORS.textPrimary} />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>한 줄 남기기</Text>
+                        <View style={styles.headerRight} />
+                    </View>
+
+                    <View style={styles.cooldownContainer}>
+                        <Feather name="clock" size={48} color={COLORS.accentMuted} />
+                        <Text style={styles.cooldownTitle}>잠시 쉬어가는 시간</Text>
+                        <Text style={styles.cooldownDescription}>
+                            다음 한 줄을 남기려면{'\n'}{formatCooldownTime()} 후에 다시 방문해주세요.
+                        </Text>
+                        <TouchableOpacity
+                            style={styles.cooldownButton}
+                            onPress={() => navigation.goBack()}
+                        >
+                            <Text style={styles.cooldownButtonText}>돌아가기</Text>
+                        </TouchableOpacity>
+                    </View>
+                </SafeAreaView>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -163,6 +256,65 @@ export const TraceWriteScreen: React.FC = () => {
                     </Animated.View>
                 )}
             </SafeAreaView>
+
+            {/* 결제 모달 */}
+            <Modal
+                visible={showPaymentModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => {
+                    setShowPaymentModal(false);
+                    navigation.goBack();
+                }}
+            >
+                <TouchableWithoutFeedback onPress={() => {
+                    setShowPaymentModal(false);
+                    navigation.goBack();
+                }}>
+                    <View style={styles.modalOverlay}>
+                        <TouchableWithoutFeedback onPress={() => { }}>
+                            <View style={styles.paymentModalContent}>
+                                <Text style={styles.paymentTitle}>오늘의 무료 작성을 다 사용했어요</Text>
+                                <Text style={styles.paymentDescription}>
+                                    추가로 한 줄을 남기려면{'\n'}결제가 필요해요.
+                                </Text>
+
+                                <TouchableOpacity
+                                    style={styles.paymentOption}
+                                    onPress={() => handlePayment('single')}
+                                >
+                                    <View>
+                                        <Text style={styles.paymentOptionTitle}>오늘 1회 추가</Text>
+                                        <Text style={styles.paymentOptionDesc}>지금 바로 1개 더 남기기</Text>
+                                    </View>
+                                    <Text style={styles.paymentPrice}>₩500</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.paymentOption}
+                                    onPress={() => handlePayment('threeDay')}
+                                >
+                                    <View>
+                                        <Text style={styles.paymentOptionTitle}>3일간 매일 1회 추가</Text>
+                                        <Text style={styles.paymentOptionDesc}>3일 동안 매일 1개씩 더 남기기</Text>
+                                    </View>
+                                    <Text style={styles.paymentPrice}>₩1,000</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    style={styles.cancelButton}
+                                    onPress={() => {
+                                        setShowPaymentModal(false);
+                                        navigation.goBack();
+                                    }}
+                                >
+                                    <Text style={styles.cancelButtonText}>다음에 할게요</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </View>
+                </TouchableWithoutFeedback>
+            </Modal>
         </View>
     );
 };
@@ -192,6 +344,9 @@ const styles = StyleSheet.create({
         fontFamily: FONTS.serif,
         color: COLORS.textPrimary,
         fontWeight: '600',
+    },
+    headerRight: {
+        width: 38,
     },
     submitButton: {
         paddingVertical: SPACING.sm,
@@ -288,5 +443,106 @@ const styles = StyleSheet.create({
         fontSize: FONT_SIZES.sm,
         fontFamily: FONTS.medium,
         overflow: 'hidden',
+    },
+    // 쿨다운 화면
+    cooldownContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: SPACING.xl,
+    },
+    cooldownTitle: {
+        fontSize: FONT_SIZES.xl,
+        fontFamily: FONTS.serif,
+        color: COLORS.textPrimary,
+        marginTop: SPACING.lg,
+        marginBottom: SPACING.sm,
+    },
+    cooldownDescription: {
+        fontSize: FONT_SIZES.md,
+        fontFamily: FONTS.regular,
+        color: COLORS.textSecondary,
+        textAlign: 'center',
+        lineHeight: 24,
+        marginBottom: SPACING.xl,
+    },
+    cooldownButton: {
+        backgroundColor: COLORS.buttonPrimary,
+        paddingVertical: SPACING.md,
+        paddingHorizontal: SPACING.xxl,
+        borderRadius: 16,
+    },
+    cooldownButtonText: {
+        fontSize: FONT_SIZES.md,
+        fontFamily: FONTS.medium,
+        color: COLORS.buttonText,
+    },
+    // 결제 모달
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    paymentModalContent: {
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        width: '85%',
+        maxWidth: 340,
+        padding: SPACING.lg,
+    },
+    paymentTitle: {
+        fontSize: FONT_SIZES.lg,
+        fontFamily: FONTS.medium,
+        color: COLORS.textPrimary,
+        textAlign: 'center',
+        marginBottom: SPACING.xs,
+    },
+    paymentDescription: {
+        fontSize: FONT_SIZES.sm,
+        fontFamily: FONTS.regular,
+        color: COLORS.textSecondary,
+        textAlign: 'center',
+        lineHeight: 22,
+        marginBottom: SPACING.lg,
+    },
+    paymentOption: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: 'rgba(160, 128, 96, 0.08)',
+        padding: SPACING.md,
+        borderRadius: 12,
+        marginBottom: SPACING.sm,
+        borderWidth: 1,
+        borderColor: 'rgba(160, 128, 96, 0.15)',
+    },
+    paymentOptionTitle: {
+        fontSize: FONT_SIZES.md,
+        fontFamily: FONTS.medium,
+        color: COLORS.textPrimary,
+    },
+    paymentOptionDesc: {
+        fontSize: FONT_SIZES.xs,
+        fontFamily: FONTS.regular,
+        color: COLORS.textSecondary,
+        marginTop: 2,
+    },
+    paymentPrice: {
+        fontSize: FONT_SIZES.lg,
+        fontFamily: FONTS.medium,
+        color: COLORS.accent,
+    },
+    cancelButton: {
+        marginTop: SPACING.md,
+        paddingVertical: SPACING.md,
+        backgroundColor: 'rgba(0,0,0,0.04)',
+        borderRadius: 12,
+    },
+    cancelButtonText: {
+        fontSize: FONT_SIZES.md,
+        fontFamily: FONTS.medium,
+        color: COLORS.textSecondary,
+        textAlign: 'center',
     },
 });
