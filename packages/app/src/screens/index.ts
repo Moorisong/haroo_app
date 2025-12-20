@@ -5,3 +5,5 @@ export * from './SendScreen';
 export * from './ReceiveScreen';
 export * from './SettingsScreen';
 export * from './TestToolsScreen';
+export * from './TraceScreen';
+export * from './TraceWriteScreen';
