@@ -3,7 +3,6 @@ import mongoose from 'mongoose';
 import Trace from '../models/Trace';
 import TraceReport from '../models/TraceReport';
 import User from '../models/User';
-import { ITrace } from '../models/Trace';
 import { getToday } from '../utils/testMode';
 
 // --- Helper Functions ---
