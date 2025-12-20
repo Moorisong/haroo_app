@@ -30,6 +30,8 @@ function App() {
   }, []);
 
   // 카카오 OAuth 콜백 처리
+  const processedRef = React.useRef(false);
+
   useEffect(() => {
     const handleKakaoCallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -37,7 +39,9 @@ function App() {
 
       // /admin/callback 경로이고 code가 있는 경우
       if (window.location.pathname === '/admin/callback' && code) {
-        console.log('Kakao OAuth callback received, code:', code.substring(0, 20) + '...');
+        // 이미 처리된 경우 중단
+        if (processedRef.current) return;
+        processedRef.current = true;
 
         try {
           // 서버에 code를 전송하여 토큰 교환 요청
@@ -51,7 +55,6 @@ function App() {
 
           if (response.ok) {
             const data = await response.json();
-            console.log('Kakao login successful:', data);
 
             // 토큰 및 사용자 정보 저장
             localStorage.setItem('admin_token', data.token || 'kakao_admin_token');
@@ -63,7 +66,6 @@ function App() {
             setCurrentPath('/admin');
           } else {
             const errorData = await response.json().catch(() => ({}));
-            console.error('Kakao login failed:', response.status, errorData);
             alert(`로그인 실패: ${errorData.message || '권한이 없거나 서버 오류가 발생했습니다.'}`);
 
             // 로그인 페이지로 이동
@@ -71,7 +73,6 @@ function App() {
             setCurrentPath('/admin');
           }
         } catch (error) {
-          console.error('Kakao login error:', error);
           alert('로그인 처리 중 오류가 발생했습니다. 네트워크를 확인해주세요.');
 
           // 로그인 페이지로 이동
