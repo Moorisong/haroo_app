@@ -33,6 +33,7 @@ export interface UserStatusResponse {
     userStatus: string;
     writePermission: 'FREE_AVAILABLE' | 'FREE_USED' | 'PAID_AVAILABLE' | 'DENIED_COOLDOWN' | 'DENIED_LOCATION' | 'DENIED_USER';
     nextAvailableAt?: string;  // Cooldown end time (ISO string)
+    cooldownRemainingMs?: number;  // Remaining cooldown in milliseconds (accounts for test time offset)
     tracePassExpiresAt?: string;
     reportInfluence: number;
 }

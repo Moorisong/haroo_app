@@ -89,8 +89,10 @@ export const TraceWriteScreen: React.FC = () => {
             if (status.writePermission === 'FREE_USED') {
                 setShowPaymentModal(true);
             } else if (status.writePermission === 'DENIED_COOLDOWN') {
-                // Use server-provided nextAvailableAt for accurate cooldown timer
-                if (status.nextAvailableAt) {
+                // Use server-provided cooldownRemainingMs for accurate timer (accounts for test time offset)
+                if (status.cooldownRemainingMs && status.cooldownRemainingMs > 0) {
+                    setCooldownEndTime(new Date(Date.now() + status.cooldownRemainingMs));
+                } else if (status.nextAvailableAt) {
                     setCooldownEndTime(new Date(status.nextAvailableAt));
                 } else {
                     // Fallback: 2 hours from now
