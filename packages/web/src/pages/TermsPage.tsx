@@ -101,7 +101,7 @@ export const TermsPage: React.FC = () => {
                     서비스 이용에 관한 문의는 아래 이메일로 연락해 주세요.
                 </p>
                 <p className="contact-email">
-                    <a href="mailto:thiagoo@naver.com">thiagoo@naver.com</a>
+                    <a href="mailto:thiagooo@naver.com">thiagooo@naver.com</a>
                 </p>
             </section>
         </div>
