@@ -152,11 +152,22 @@ export const TraceScreen: React.FC = () => {
         setReportModalVisible(true);
     };
 
+    // 애니메이션 ref 추가
+    const toastAnimRef = useRef<Animated.CompositeAnimation | null>(null);
+
     // 토스트 표시 함수
     const showToastMsg = (message: string) => {
+        // 이전 애니메이션 중단
+        if (toastAnimRef.current) {
+            toastAnimRef.current.stop();
+        }
+
         setToastMessage(message);
         setShowToast(true);
-        Animated.sequence([
+        toastOpacity.setValue(1); // 즉시 보이게 설정 (깜빡임 방지)
+
+        // 새 애니메이션 시작
+        const anim = Animated.sequence([
             Animated.timing(toastOpacity, {
                 toValue: 1,
                 duration: 200,
@@ -170,7 +181,15 @@ export const TraceScreen: React.FC = () => {
                 easing: Easing.ease,
                 useNativeDriver: true,
             }),
-        ]).start(() => setShowToast(false));
+        ]);
+
+        toastAnimRef.current = anim;
+
+        anim.start(({ finished }) => {
+            if (finished) {
+                setShowToast(false);
+            }
+        });
     };
 
     // 신고 제출
