@@ -3,6 +3,7 @@ import { advanceDay, advanceHours, resetDate, getOffset, isTestMode, getToday } 
 import User from '../models/User';
 import MessageMode from '../models/MessageMode';
 import Message from '../models/Message';
+import Trace from '../models/Trace';
 import { protect } from '../middlewares/authMiddleware';
 import { sendModeAcceptedPush, sendModeRejectedPush, sendPushNotification, PUSH_MESSAGES, sendModeRequestedPush } from '../services/pushService';
 import { runCleanup } from '../schedulers/messageCleanupScheduler';
@@ -90,7 +91,22 @@ router.post('/reset-trace', protect, async (req: Request, res: Response) => {
         await user.save();
     }
 
-    res.json({ message: '한줄 테스트 상태 초기화 완료', currentOffset: getOffset(), currentTestDate: getToday() });
+    // Also delete seed messages (messages with no real author - random ObjectId)
+    // Seed messages are created with dummy authorId that doesn't exist in User collection
+    const realUserIds = await User.find({}).select('_id').lean();
+    const realUserIdStrings = realUserIds.map(u => u._id.toString());
+
+    // Delete traces where authorId is not a real user (seed messages)
+    const allTraces = await Trace.find({}).select('authorId').lean();
+    const seedTraceIds = allTraces
+        .filter(t => t.authorId && !realUserIdStrings.includes(t.authorId.toString()))
+        .map(t => t._id);
+
+    if (seedTraceIds.length > 0) {
+        await Trace.deleteMany({ _id: { $in: seedTraceIds } });
+    }
+
+    res.json({ message: '한줄 테스트 상태 및 메시지 초기화 완료', currentOffset: getOffset(), currentTestDate: getToday() });
 });
 
 // ... existing code ...
