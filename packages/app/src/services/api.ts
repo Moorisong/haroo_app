@@ -1,7 +1,6 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Connection, User } from '../types';
-import { getGlobalLoadingHandlers } from '../context/LoadingContext';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -15,38 +14,24 @@ const api = axios.create({
 
 // Function to set up Axios interceptors
 export const setupAxiosInterceptors = (logout: () => Promise<void>) => {
-    // Request Interceptor: Attach Access Token + Show Loading
+    // Request Interceptor: Attach Access Token
     api.interceptors.request.use(
         async (config) => {
             const token = await AsyncStorage.getItem('accessToken');
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
-
-            // Show global loading spinner
-            const { showLoading } = getGlobalLoadingHandlers();
-            if (showLoading) showLoading();
-
             return config;
         },
         (error) => {
-            const { hideLoading } = getGlobalLoadingHandlers();
-            if (hideLoading) hideLoading();
             return Promise.reject(error);
         }
     );
 
-    // Response Interceptor: Handle 401 (token expired) = logout + Hide Loading
+    // Response Interceptor: Handle 401 (token expired) = logout
     api.interceptors.response.use(
-        (response) => {
-            const { hideLoading } = getGlobalLoadingHandlers();
-            if (hideLoading) hideLoading();
-            return response;
-        },
+        (response) => response,
         async (error) => {
-            const { hideLoading } = getGlobalLoadingHandlers();
-            if (hideLoading) hideLoading();
-
             if (error.response?.status === 401) {
                 // 토큰 만료 또는 유효하지 않음 → 로그아웃
                 await logout();

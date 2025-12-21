@@ -14,6 +14,7 @@ import {
     Modal,
     Animated,
     Easing,
+    ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -57,6 +58,9 @@ export const TraceWriteScreen: React.FC = () => {
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const toastOpacity = useRef(new Animated.Value(0)).current;
+
+    // Submit loading state
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // 진입 시 작성 권한 체크 (화면 focus 시마다 실행)
     useFocusEffect(
@@ -143,6 +147,7 @@ export const TraceWriteScreen: React.FC = () => {
             return;
         }
 
+        setIsSubmitting(true);
         try {
             await traceService.createMessage(content, selectedTag, locationState.lat, locationState.lng);
             showToastMsg('한 줄이 남겨졌어요.');
@@ -154,6 +159,8 @@ export const TraceWriteScreen: React.FC = () => {
         } catch (error) {
             console.error('Create message failed:', error);
             showToastMsg('작성에 실패했어요.');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -240,13 +247,18 @@ export const TraceWriteScreen: React.FC = () => {
                         <TouchableOpacity
                             style={styles.submitButton}
                             onPress={handleSubmit}
+                            disabled={isSubmitting}
                         >
-                            <Text style={[
-                                styles.submitButtonText,
-                                (!selectedTag || !content.trim()) && styles.submitButtonTextDisabled
-                            ]}>
-                                완료
-                            </Text>
+                            {isSubmitting ? (
+                                <ActivityIndicator size="small" color={COLORS.accent} />
+                            ) : (
+                                <Text style={[
+                                    styles.submitButtonText,
+                                    (!selectedTag || !content.trim()) && styles.submitButtonTextDisabled
+                                ]}>
+                                    완료
+                                </Text>
+                            )}
                         </TouchableOpacity>
                     </View>
 

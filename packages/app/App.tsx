@@ -15,7 +15,6 @@ import {
 } from '@expo-google-fonts/nanum-gothic';
 
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { LoadingProvider, useLoading, setGlobalLoadingHandlers } from './src/context/LoadingContext';
 import { HomeScreen, LandingScreen, RequestScreen, SendScreen, ReceiveScreen, SettingsScreen, TestToolsScreen, TraceScreen, TraceWriteScreen } from './src/screens';
 import { registerForPushNotificationsAsync, setupNotificationListeners } from './src/services/notifications';
 import Constants from 'expo-constants';
@@ -78,11 +77,7 @@ const RootNavigator = () => {
     }
   }, [accessToken]);
 
-  // Connect loading handlers for axios interceptors
-  const { showLoading, hideLoading } = useLoading();
-  useEffect(() => {
-    setGlobalLoadingHandlers(showLoading, hideLoading);
-  }, [showLoading, hideLoading]);
+
 
   if (isLoading) {
     return (
@@ -119,9 +114,7 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <LoadingProvider>
-        <RootNavigator />
-      </LoadingProvider>
+      <RootNavigator />
     </AuthProvider>
   );
 }
