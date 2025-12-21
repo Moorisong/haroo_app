@@ -38,6 +38,13 @@ const EMPTY_MESSAGES = [
     "누군가의 말을 기다리고 있어요.",
 ];
 
+// 서브타이틀 문구 목록 (랜덤)
+const SUBTITLE_MESSAGES = [
+    { main: "지금 이 장소에 머문 사람들의 이야기", sub: "작성 후 3일이면 사라지는 짧은 말입니다." },
+    { main: "이 자리를 지나간 사람들이 남긴 이야기", sub: "작성 후 3일이면 사라집니다." },
+    { main: "여기, 누군가 남긴 한 줄의 흔적", sub: "작성 후 3일이면 사라져요." },
+];
+
 // 신고 사유 목록
 const REPORT_REASONS = ['욕설/비방', '특정인 저격', '허위 정보', '불쾌하거나 위험함', '기타'];
 
@@ -58,6 +65,12 @@ export const TraceScreen: React.FC = () => {
     // 빈 상태 문구 (랜덤, 컴포넌트 마운트 시 고정)
     const randomEmptyMessage = useMemo(
         () => EMPTY_MESSAGES[Math.floor(Math.random() * EMPTY_MESSAGES.length)],
+        []
+    );
+
+    // 서브타이틀 문구 (랜덤, 컴포넌트 마운트 시 고정)
+    const randomSubtitle = useMemo(
+        () => SUBTITLE_MESSAGES[Math.floor(Math.random() * SUBTITLE_MESSAGES.length)],
         []
     );
 
@@ -278,6 +291,12 @@ export const TraceScreen: React.FC = () => {
                     <View style={styles.headerRight} />
                 </View>
 
+                {/* Subtitle */}
+                <View style={styles.subtitleContainer}>
+                    <Text style={styles.subtitleText}>{randomSubtitle.main}</Text>
+                    <Text style={styles.subtitleSubText}>{randomSubtitle.sub}</Text>
+                </View>
+
                 {/* Content */}
                 {isLoading ? (
                     <View style={styles.loadingContainer}>
@@ -403,6 +422,23 @@ const styles = StyleSheet.create({
         fontFamily: FONTS.regular,
         textAlign: 'center',
         lineHeight: 24,
+    },
+    subtitleContainer: {
+        paddingHorizontal: SPACING.lg,
+        paddingBottom: SPACING.md,
+    },
+    subtitleText: {
+        fontSize: FONT_SIZES.sm,
+        color: COLORS.textSecondary,
+        fontFamily: FONTS.regular,
+        textAlign: 'center',
+    },
+    subtitleSubText: {
+        fontSize: FONT_SIZES.xs,
+        color: COLORS.textTertiary,
+        fontFamily: FONTS.regular,
+        textAlign: 'center',
+        marginTop: 4,
     },
     listContent: {
         paddingHorizontal: SPACING.lg,
