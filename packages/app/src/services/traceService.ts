@@ -32,6 +32,8 @@ export interface TraceListResponse {
 export interface UserStatusResponse {
     userStatus: string;
     writePermission: 'FREE_AVAILABLE' | 'FREE_USED' | 'PAID_AVAILABLE' | 'DENIED_COOLDOWN' | 'DENIED_LOCATION' | 'DENIED_USER';
+    nextAvailableAt?: string;  // Cooldown end time (ISO string)
+    tracePassExpiresAt?: string;
     reportInfluence: number;
 }
 

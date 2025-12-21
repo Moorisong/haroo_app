@@ -87,9 +87,13 @@ export const TraceWriteScreen: React.FC = () => {
             if (status.writePermission === 'FREE_USED') {
                 setShowPaymentModal(true);
             } else if (status.writePermission === 'DENIED_COOLDOWN') {
-                // Server should return cooldown time ideally, but for now mocked relative to check
-                // Or maybe we should add cooldown info to getUserStatus response
-                setCooldownEndTime(new Date(Date.now() + 1000 * 60 * 60));
+                // Use server-provided nextAvailableAt for accurate cooldown timer
+                if (status.nextAvailableAt) {
+                    setCooldownEndTime(new Date(status.nextAvailableAt));
+                } else {
+                    // Fallback: 2 hours from now
+                    setCooldownEndTime(new Date(Date.now() + 2 * 60 * 60 * 1000));
+                }
             }
         } catch (error) {
             console.error('Permission check failed:', error);
