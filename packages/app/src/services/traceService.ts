@@ -52,6 +52,10 @@ const traceService = {
         const response = await api.post('/api/messages',
             { content, toneTag, lat, lng }
         );
+        // Clear test override after successful creation so subsequent checks use real server response
+        if ((global as any).TRACE_WRITE_PERMISSION) {
+            delete (global as any).TRACE_WRITE_PERMISSION;
+        }
         return response.data;
     },
 
