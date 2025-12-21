@@ -52,7 +52,8 @@ router.post('/advance-hours', async (req: Request, res: Response) => {
 
 // ... existing code ...
 
-router.post('/reset', async (req: Request, res: Response) => {
+// Reset for Main Content (MessageMode)
+router.post('/reset-main', async (req: Request, res: Response) => {
     resetDate();
 
     // Reset test data
@@ -60,8 +61,6 @@ router.post('/reset', async (req: Request, res: Response) => {
     const testUser = await User.findOne({ kakaoId: TEST_USER_ID });
 
     if (testUser) {
-        // ... (existing mode removal logging)
-
         const modes = await MessageMode.find({
             $or: [{ recipient: testUser._id }, { initiator: testUser._id }]
         });
@@ -71,11 +70,27 @@ router.post('/reset', async (req: Request, res: Response) => {
         await Message.deleteMany({ modeId: { $in: modeIds } });
         await MessageMode.deleteMany({ _id: { $in: modeIds } });
 
-        // [NEW] Delete Push Logs for test user
+        // Delete Push Logs for test user
         await PushLog.deleteMany({ userId: testUser._id.toString() });
     }
 
-    res.json({ message: 'Test state and data reset', currentOffset: getOffset(), currentTestDate: getToday() });
+    res.json({ message: '메인 콘텐츠 테스트 상태 초기화 완료', currentOffset: getOffset(), currentTestDate: getToday() });
+});
+
+// Reset for Trace (한줄)
+router.post('/reset-trace', protect, async (req: Request, res: Response) => {
+    resetDate();
+
+    const user = req.user;
+    if (user) {
+        // Reset Trace-related user fields
+        user.tracePassExpiresAt = null;
+        user.lastTraceAt = null;
+        user.traceDailyCount = 0;
+        await user.save();
+    }
+
+    res.json({ message: '한줄 테스트 상태 초기화 완료', currentOffset: getOffset(), currentTestDate: getToday() });
 });
 
 // ... existing code ...

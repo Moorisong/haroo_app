@@ -327,10 +327,7 @@ export const TraceWriteScreen: React.FC = () => {
                                     style={styles.paymentOption}
                                     onPress={() => handlePayment('single')}
                                 >
-                                    <View>
-                                        <Text style={styles.paymentOptionTitle}>1일 자유이용권</Text>
-                                        <Text style={styles.paymentOptionDesc}>결제 시점부터 24시간 동안 작성 가능</Text>
-                                    </View>
+                                    <Text style={styles.paymentOptionTitle}>1일 자유이용권</Text>
                                     <Text style={styles.paymentPrice}>₩500</Text>
                                 </TouchableOpacity>
 
@@ -338,12 +335,13 @@ export const TraceWriteScreen: React.FC = () => {
                                     style={styles.paymentOption}
                                     onPress={() => handlePayment('threeDay')}
                                 >
-                                    <View>
-                                        <Text style={styles.paymentOptionTitle}>2일 자유이용권</Text>
-                                        <Text style={styles.paymentOptionDesc}>결제 시점부터 48시간 동안 작성 가능</Text>
-                                    </View>
+                                    <Text style={styles.paymentOptionTitle}>2일 자유이용권</Text>
                                     <Text style={styles.paymentPrice}>₩1,000</Text>
                                 </TouchableOpacity>
+
+                                <Text style={styles.paymentNote}>
+                                    * 한 줄은 2시간마다 작성할 수 있어요.
+                                </Text>
 
                                 <TouchableOpacity
                                     style={styles.cancelButton}
@@ -473,7 +471,7 @@ const styles = StyleSheet.create({
     },
     toast: {
         position: 'absolute',
-        bottom: 100,
+        top: 100,
         left: 0,
         right: 0,
         alignItems: 'center',
@@ -579,7 +577,7 @@ const styles = StyleSheet.create({
         color: COLORS.accent,
     },
     cancelButton: {
-        marginTop: SPACING.md,
+        marginTop: SPACING.lg,
         paddingVertical: SPACING.md,
         backgroundColor: 'rgba(0,0,0,0.04)',
         borderRadius: 12,
@@ -596,5 +594,12 @@ const styles = StyleSheet.create({
         color: COLORS.textTertiary,
         marginTop: SPACING.md,
         marginLeft: SPACING.xs,
+    },
+    paymentNote: {
+        fontSize: FONT_SIZES.xs,
+        fontFamily: FONTS.regular,
+        color: COLORS.textTertiary,
+        textAlign: 'center',
+        marginTop: SPACING.md,
     },
 });
