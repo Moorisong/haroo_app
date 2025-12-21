@@ -74,6 +74,7 @@ router.get('/users/me', protect, async (req, res) => {
 
     let writePermission = 'FREE_AVAILABLE';
     let nextAvailableAt = null;
+    let cooldownRemainingMs = 0;
 
     if (hasValidPass) {
         // Paid user - check cooldown
@@ -87,6 +88,7 @@ router.get('/users/me', protect, async (req, res) => {
             } else if (diff < cooldownMs) {
                 writePermission = 'DENIED_COOLDOWN';
                 nextAvailableAt = new Date(lastTraceTime + cooldownMs);
+                cooldownRemainingMs = cooldownMs - diff;
             } else {
                 writePermission = 'PAID_AVAILABLE';
             }
@@ -114,6 +116,7 @@ router.get('/users/me', protect, async (req, res) => {
         userStatus: user.status,
         writePermission,
         nextAvailableAt,
+        cooldownRemainingMs,
         tracePassExpiresAt: user.tracePassExpiresAt,
         reportInfluence: user.reportInfluence || 1.0
     });
