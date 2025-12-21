@@ -16,7 +16,7 @@ import {
     Easing,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import { COLORS, FONT_SIZES, SPACING, FONTS } from '../constants/theme';
 import { BubbleBackground } from '../components/BubbleBackground';
@@ -58,10 +58,12 @@ export const TraceWriteScreen: React.FC = () => {
     const [toastMessage, setToastMessage] = useState('');
     const toastOpacity = useRef(new Animated.Value(0)).current;
 
-    // 진입 시 작성 권한 체크
-    useEffect(() => {
-        checkWritePermission();
-    }, []);
+    // 진입 시 작성 권한 체크 (화면 focus 시마다 실행)
+    useFocusEffect(
+        React.useCallback(() => {
+            checkWritePermission();
+        }, [])
+    );
 
     const checkWritePermission = async () => {
         try {
