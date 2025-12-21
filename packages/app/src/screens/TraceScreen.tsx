@@ -186,9 +186,13 @@ export const TraceScreen: React.FC = () => {
         try {
             await traceService.reportMessage(targetId, reason);
             showToastMsg('신고가 접수되었어요.');
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            showToastMsg('신고에 실패했어요.');
+            if (error.response?.status === 400 && error.response?.data?.message === 'Already reported') {
+                showToastMsg('이미 신고한 글이에요.');
+            } else {
+                showToastMsg('신고에 실패했어요.');
+            }
         }
     };
 
