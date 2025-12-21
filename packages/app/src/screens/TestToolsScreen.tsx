@@ -233,17 +233,6 @@ export const TestToolsScreen = () => {
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        style={[styles.button, { backgroundColor: '#9C27B0' }]}
-                        onPress={() => {
-                            (global as any).TRACE_WRITE_PERMISSION = 'PAID_AVAILABLE';
-                            Alert.alert('Trace Test', '유료 작성 가능 상태로 변경됨');
-                        }}
-                        disabled={loading}
-                    >
-                        <Text style={styles.buttonText}>PAID_AVAILABLE (유료 추가 작성)</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
                         style={[styles.button, { backgroundColor: '#f44336' }]}
                         onPress={() => {
                             (global as any).TRACE_WRITE_PERMISSION = 'DENIED_COOLDOWN';
@@ -251,7 +240,7 @@ export const TestToolsScreen = () => {
                         }}
                         disabled={loading}
                     >
-                        <Text style={styles.buttonText}>DENIED_COOLDOWN (쿨다운 테스트)</Text>
+                        <Text style={styles.buttonText}>DENIED_COOLDOWN (UI 확인용)</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
