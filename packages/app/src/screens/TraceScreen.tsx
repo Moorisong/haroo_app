@@ -182,6 +182,7 @@ export const TraceScreen: React.FC = () => {
         const targetId = reportTargetId;
         setReportTargetId(null);
 
+        showToastMsg('신고 접수 중...');
         try {
             await traceService.reportMessage(targetId, reason);
             showToastMsg('신고가 접수되었어요.');
