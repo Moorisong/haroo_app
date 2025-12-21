@@ -78,10 +78,15 @@ router.get('/users/me', protect, async (req, res) => {
     if (hasValidPass) {
         // Paid user - check cooldown
         if (user.lastTraceAt) {
-            const diff = now.getTime() - user.lastTraceAt.getTime();
-            if (diff < cooldownMs) {
+            const lastTraceTime = new Date(user.lastTraceAt).getTime();
+            const diff = now.getTime() - lastTraceTime;
+
+            // Sanity check: if lastTraceAt is in the future (from test tools), ignore cooldown
+            if (diff < 0) {
+                writePermission = 'PAID_AVAILABLE';
+            } else if (diff < cooldownMs) {
                 writePermission = 'DENIED_COOLDOWN';
-                nextAvailableAt = new Date(user.lastTraceAt.getTime() + cooldownMs);
+                nextAvailableAt = new Date(lastTraceTime + cooldownMs);
             } else {
                 writePermission = 'PAID_AVAILABLE';
             }
