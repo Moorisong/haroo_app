@@ -141,12 +141,15 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
         if (hasValidPass) {
             // [Paid User] Check 2 hours cooldown
             if (user.lastTraceAt) {
-                const diff = now.getTime() - user.lastTraceAt.getTime();
-                if (diff < cooldownMs) {
+                const lastTraceTime = new Date(user.lastTraceAt).getTime();
+                const diff = now.getTime() - lastTraceTime;
+
+                // Sanity check: if lastTraceAt is in the future (from test tools), ignore cooldown
+                if (diff >= 0 && diff < cooldownMs) {
                     res.status(403).json({
                         message: 'Cooldown active',
                         writePermission: 'DENIED_COOLDOWN',
-                        nextAvailableAt: new Date(user.lastTraceAt.getTime() + cooldownMs)
+                        nextAvailableAt: new Date(lastTraceTime + cooldownMs)
                     });
                     return;
                 }
