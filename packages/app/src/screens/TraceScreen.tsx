@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
     View,
     Text,
@@ -11,6 +11,8 @@ import {
     FlatList,
     Modal,
     Alert,
+    Animated,
+    Easing,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -61,6 +63,11 @@ export const TraceScreen: React.FC = () => {
     // 신고 모달 상태
     const [reportModalVisible, setReportModalVisible] = useState(false);
     const [reportTargetId, setReportTargetId] = useState<string | null>(null);
+
+    // 토스트 상태
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+    const toastOpacity = useRef(new Animated.Value(0)).current;
 
     // 빈 상태 문구 (랜덤, 컴포넌트 마운트 시 고정)
     const randomEmptyMessage = useMemo(
@@ -145,15 +152,42 @@ export const TraceScreen: React.FC = () => {
         setReportModalVisible(true);
     };
 
+    // 토스트 표시 함수
+    const showToastMsg = (message: string) => {
+        setToastMessage(message);
+        setShowToast(true);
+        Animated.sequence([
+            Animated.timing(toastOpacity, {
+                toValue: 1,
+                duration: 200,
+                easing: Easing.ease,
+                useNativeDriver: true,
+            }),
+            Animated.delay(1500),
+            Animated.timing(toastOpacity, {
+                toValue: 0,
+                duration: 300,
+                easing: Easing.ease,
+                useNativeDriver: true,
+            }),
+        ]).start(() => setShowToast(false));
+    };
+
     // 신고 제출
     const submitReport = async (reason: string) => {
         if (!reportTargetId) return;
+
+        // 모달 먼저 닫기
+        setReportModalVisible(false);
+        const targetId = reportTargetId;
+        setReportTargetId(null);
+
         try {
-            await traceService.reportMessage(reportTargetId, reason);
-            setReportModalVisible(false);
-            setReportTargetId(null);
+            await traceService.reportMessage(targetId, reason);
+            showToastMsg('신고가 접수되었어요.');
         } catch (error) {
             console.error(error);
+            showToastMsg('신고에 실패했어요.');
         }
     };
 
@@ -368,6 +402,13 @@ export const TraceScreen: React.FC = () => {
                     </View>
                 </TouchableWithoutFeedback>
             </Modal>
+
+            {/* Toast */}
+            {showToast && (
+                <Animated.View style={[styles.toast, { opacity: toastOpacity }]}>
+                    <Text style={styles.toastText}>{toastMessage}</Text>
+                </Animated.View>
+            )}
         </View>
     );
 };
@@ -604,6 +645,23 @@ const styles = StyleSheet.create({
         fontSize: FONT_SIZES.md,
         fontFamily: FONTS.medium,
         color: COLORS.textSecondary,
+        textAlign: 'center',
+    },
+    toast: {
+        position: 'absolute',
+        top: '45%',
+        left: 20,
+        right: 20,
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        paddingVertical: 14,
+        paddingHorizontal: 20,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    toastText: {
+        color: '#fff',
+        fontSize: FONT_SIZES.sm,
+        fontFamily: FONTS.medium,
         textAlign: 'center',
     },
 });
