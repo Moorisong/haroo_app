@@ -202,12 +202,14 @@ export const TraceScreen: React.FC = () => {
                     text: '삭제',
                     style: 'destructive',
                     onPress: async () => {
+                        showToastMsg('삭제 중...');
                         try {
                             await traceService.deleteMessage(messageId);
                             setMessages(prev => prev.filter(m => m._id !== messageId));
+                            showToastMsg('삭제되었어요.');
                         } catch (error) {
                             console.error('Delete failed:', error);
-                            Alert.alert('오류', '삭제에 실패했어요.');
+                            showToastMsg('삭제에 실패했어요.');
                         }
                     }
                 }
