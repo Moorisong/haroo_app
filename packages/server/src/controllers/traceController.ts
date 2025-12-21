@@ -189,7 +189,8 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
             grid,
             status: 'ACTIVE',
             authorId: userId,
-            expiresAt
+            expiresAt,
+            createdAt: getToday() // Use test-aware time for consistent sorting
         });
 
         await newTrace.save();
@@ -436,9 +437,12 @@ export const seedMessages = async (req: Request, res: Response): Promise<void> =
         const dummyAuthorId = new mongoose.Types.ObjectId(); // Random ID
 
         const messages = [];
+        const now = getToday();
         for (let i = 1; i <= 5; i++) {
             const grid = getGridIndex(Number(lat), Number(lng));
-            const expiresAt = new Date(getToday().getTime() + 72 * 60 * 60 * 1000);
+            const expiresAt = new Date(now.getTime() + 72 * 60 * 60 * 1000);
+            // Set createdAt to past (1-5 hours ago) so seed messages appear below real messages
+            const createdAt = new Date(now.getTime() - i * 60 * 60 * 1000);
 
             messages.push({
                 content: `테스트 메시지입니다 #${i}\n신고 기능을 테스트해보세요.`,
@@ -448,7 +452,7 @@ export const seedMessages = async (req: Request, res: Response): Promise<void> =
                 status: 'ACTIVE',
                 authorId: dummyAuthorId,
                 expiresAt,
-                createdAt: getToday()
+                createdAt
             });
         }
 
