@@ -117,7 +117,7 @@ export const PrivacyPage: React.FC = () => {
                 </p>
                 <div className="contact-box">
                     <p><strong>개인정보 보호책임자</strong></p>
-                    <p>이메일: <a href="mailto:thiagoo@naver.com">thiagoo@naver.com</a></p>
+                    <p>이메일: <a href="mailto:thiagooo@naver.com">thiagooo@naver.com</a></p>
                 </div>
             </section>
 
@@ -135,7 +135,7 @@ export const PrivacyPage: React.FC = () => {
                     개인정보 처리에 관한 문의는 아래 이메일로 연락해 주세요.
                 </p>
                 <p className="contact-email">
-                    <a href="mailto:thiagoo@naver.com">thiagoo@naver.com</a>
+                    <a href="mailto:thiagooo@naver.com">thiagooo@naver.com</a>
                 </p>
             </section>
         </div>

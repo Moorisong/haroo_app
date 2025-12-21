@@ -132,3 +132,11 @@ export const useAuth = () => {
     }
     return context;
 };
+// Service에서 사용할 수 있는 토큰 getter (비동기)
+export const getToken = async (): Promise<string | null> => {
+    try {
+        return await AsyncStorage.getItem('accessToken');
+    } catch (e) {
+        return null;
+    }
+};

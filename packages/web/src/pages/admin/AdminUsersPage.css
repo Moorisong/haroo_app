@@ -1,0 +1,174 @@
+.admin-users-page {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.filter-bar {
+    display: flex;
+    gap: 12px;
+    background: white;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.search-input {
+    flex: 1;
+    padding: 10px 16px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.search-input:focus {
+    border-color: #667eea;
+}
+
+.status-select {
+    padding: 10px 16px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+    min-width: 140px;
+}
+
+.users-table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.users-table th,
+.users-table td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.users-table th {
+    background: #f8f9fa;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+}
+
+.users-table td {
+    font-size: 14px;
+    color: #2c3e50;
+}
+
+.users-table tr:hover {
+    background: #f8f9fa;
+}
+
+.user-id {
+    font-family: 'Monaco', 'Consolas', monospace;
+    font-size: 13px;
+    color: #667eea;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.badge-active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.badge-blocked {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.badge-muted {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.badge-banned {
+    background: #2c3e50;
+    color: white;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.action-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.action-btn.view {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.action-btn.view:hover {
+    background: #dee2e6;
+}
+
+.action-btn.warn {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.action-btn.warn:hover {
+    background: #fecaca;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+}
+
+.page-btn {
+    padding: 8px 16px;
+    border: 1px solid #e9ecef;
+    background: white;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.page-info {
+    font-size: 14px;
+    color: #6c757d;
+}

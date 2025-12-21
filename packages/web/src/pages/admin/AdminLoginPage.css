@@ -1,0 +1,93 @@
+.admin-login-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+}
+
+.login-container {
+    background: white;
+    border-radius: 20px;
+    padding: 48px 40px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+.login-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0 0 8px 0;
+}
+
+.login-header p {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin: 0 0 32px 0;
+}
+
+.login-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.kakao-login-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px 20px;
+    background-color: #FEE500;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #000000;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.kakao-login-button:hover {
+    background-color: #e6cf00;
+    transform: translateY(-1px);
+}
+
+.kakao-login-button:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.kakao-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+.dev-login-button {
+    width: 100%;
+    padding: 14px 20px;
+    background-color: #e9ecef;
+    border: none;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #495057;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dev-login-button:hover {
+    background-color: #dee2e6;
+}
+
+.login-notice {
+    margin-top: 24px;
+    font-size: 12px;
+    color: #95a5a6;
+}

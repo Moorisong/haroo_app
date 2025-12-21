@@ -6,6 +6,7 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const api = axios.create({
     baseURL: BASE_URL,
+    timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
     },
@@ -199,8 +200,13 @@ export const advanceHours = async (hours: number = 12) => {
     return response.data;
 };
 
-export const resetTestState = async () => {
-    const response = await api.post('/test-tools/reset');
+export const resetMainTestState = async () => {
+    const response = await api.post('/test-tools/reset-main');
+    return response.data;
+};
+
+export const resetTraceTestState = async () => {
+    const response = await api.post('/test-tools/reset-trace');
     return response.data;
 };
 

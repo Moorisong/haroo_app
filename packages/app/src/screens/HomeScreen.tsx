@@ -260,8 +260,22 @@ export const HomeScreen: React.FC = () => {
                     )}
                     <View style={styles.content}>
                         {renderContent()}
+
+                        {/* 여기, 한 줄 - 항상 고정 노출 */}
+                        <TouchableOpacity
+                            style={styles.traceEntryButton}
+                            onPress={() => navigation.navigate('Trace')}
+                            activeOpacity={0.7}
+                        >
+                            <View style={styles.traceEntryContent}>
+                                <Feather name="map-pin" size={16} color={COLORS.accent} />
+                                <Text style={styles.traceEntryText}>여기 한줄 보러가기</Text>
+                            </View>
+                            <Feather name="chevron-right" size={18} color={COLORS.textTertiary} />
+                        </TouchableOpacity>
                     </View>
                 </ScrollView>
+
                 {/* Toast Message */}
                 {showToast && (
                     <Animated.View style={[styles.toast, { opacity: toastOpacity }]}>
@@ -560,9 +574,9 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(0,0,0,0.04)',
         borderRadius: 14,
     },
-    content: { flex: 1, paddingHorizontal: SPACING.lg, paddingBottom: SPACING.xxl },
-    stateContainer: { flex: 1, justifyContent: 'space-between' },
-    centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: -60 },
+    content: { flex: 1, paddingHorizontal: SPACING.lg, justifyContent: 'center' },
+    stateContainer: { alignItems: 'center' },
+    centerContent: { alignItems: 'center', marginBottom: SPACING.lg, marginTop: -100 },
     mainTextContainer: { alignItems: 'center', marginBottom: SPACING.lg },
     mainText: { fontSize: 28, color: COLORS.textPrimary, fontWeight: 'bold', fontFamily: FONTS.serif, textAlign: 'center', lineHeight: 42 },
     subText: { fontSize: FONT_SIZES.md, color: COLORS.textSecondary, textAlign: 'center', lineHeight: 24 },
@@ -579,7 +593,7 @@ const styles = StyleSheet.create({
         fontFamily: FONTS.medium,
         textAlign: 'center',
     },
-    buttonContainer: { width: '100%', paddingHorizontal: SPACING.sm, marginBottom: SPACING.xxl },
+    buttonContainer: { width: '100%', paddingHorizontal: SPACING.sm, marginBottom: SPACING.md },
     waitingIndicator: { flexDirection: 'row', gap: SPACING.sm, marginTop: SPACING.xl },
     dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.accentMuted },
     dotActive: { backgroundColor: COLORS.accent },
@@ -691,6 +705,31 @@ const styles = StyleSheet.create({
         color: COLORS.textPrimary,
         fontFamily: FONTS.medium,
         lineHeight: 28,
+    },
+    // 여기 한줄 진입 버튼
+    traceEntryButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: 'rgba(160, 128, 96, 0.08)',
+        marginHorizontal: SPACING.sm,
+        marginTop: SPACING.sm,
+        marginBottom: 0,
+        paddingVertical: SPACING.md,
+        paddingHorizontal: SPACING.lg,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(160, 128, 96, 0.15)',
+    },
+    traceEntryContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.sm,
+    },
+    traceEntryText: {
+        fontSize: FONT_SIZES.md,
+        color: COLORS.accent,
+        fontFamily: FONTS.medium,
     },
 });
 

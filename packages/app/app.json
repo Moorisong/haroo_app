@@ -10,7 +10,7 @@
     "newArchEnabled": false,
     "private": true,
     "extra": {
-      "APP_MODE": "PROD",
+      "APP_MODE": "TEST",
       "eas": {
         "projectId": "ecea1687-c771-4ecf-8dd0-aede914a1da1"
       }
