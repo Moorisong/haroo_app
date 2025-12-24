@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
+import { DeleteAccountPage } from './pages/DeleteAccountPage';
+import { PartialDeletePage } from './pages/PartialDeletePage';
 import { AdminLoginPage } from './pages/admin/AdminLoginPage';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage';
@@ -141,6 +143,10 @@ function App() {
         return <TermsPage />;
       case '/privacy':
         return <PrivacyPage />;
+      case '/delete-account':
+        return <DeleteAccountPage />;
+      case '/partial-delete':
+        return <PartialDeletePage />;
       default:
         return (
           <div className="home-container">

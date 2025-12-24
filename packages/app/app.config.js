@@ -1,0 +1,70 @@
+import 'dotenv/config';
+
+export default {
+    name: "하루",
+    slug: "haroo",
+    scheme: "haroo",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/icon.png",
+    userInterfaceStyle: "light",
+    newArchEnabled: false,
+    extra: {
+        APP_MODE: "TEST",
+        KAKAO_NATIVE_APP_KEY: process.env.KAKAO_NATIVE_APP_KEY,
+        eas: {
+            projectId: "ecea1687-c771-4ecf-8dd0-aede914a1da1"
+        }
+    },
+    splash: {
+        image: "./assets/splash-icon.png",
+        resizeMode: "contain",
+        backgroundColor: "#ffffff"
+    },
+    ios: {
+        bundleIdentifier: "com.haroo.app"
+    },
+    android: {
+        package: "com.haroo.app",
+        adaptiveIcon: {
+            foregroundImage: "./assets/adaptive-icon.png",
+            backgroundColor: "#ffffff"
+        },
+        edgeToEdgeEnabled: true,
+        predictiveBackGestureEnabled: false
+    },
+    web: {
+        favicon: "./assets/haroo_logo.png"
+    },
+    plugins: [
+        "expo-font",
+        "expo-web-browser",
+        [
+            "react-native-android-widget",
+            {
+                widgets: [
+                    {
+                        name: "HarooWidgetSmall",
+                        label: "하루 (소)",
+                        minWidth: "110dp",
+                        minHeight: "40dp",
+                        description: "오늘 받은 메시지를 간략히 확인",
+                        updatePeriodMillis: 1800000,
+                        resizeMode: "horizontal",
+                        widgetFeatures: "reconfigurable|configuration_optional"
+                    },
+                    {
+                        name: "HarooWidgetMedium",
+                        label: "하루 (중)",
+                        minWidth: "250dp",
+                        minHeight: "100dp",
+                        description: "오늘 받은 메시지를 확인",
+                        updatePeriodMillis: 1800000,
+                        resizeMode: "none",
+                        widgetFeatures: "reconfigurable|configuration_optional"
+                    }
+                ]
+            }
+        ]
+    ]
+};

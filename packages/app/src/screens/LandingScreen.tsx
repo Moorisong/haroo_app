@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Image, Dimensions, Text, TouchableOpacity, Alert, ActivityIndicator, Linking } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 
+import Constants from 'expo-constants';
+
 import { BubbleBackground } from '../components/BubbleBackground';
 import { COLORS, FONTS, SPACING } from '../constants/theme';
 import { APP_CONSTANTS } from '../constants/app';
@@ -9,8 +11,8 @@ import { useAuth } from '../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
-// 환경변수에서 값 가져오기 (REST API 키 사용)
-const KAKAO_CLIENT_ID = process.env.EXPO_PUBLIC_KAKAO_REST_API_KEY;
+// 환경변수에서 값 가져오기 (Native App Key 사용)
+const KAKAO_CLIENT_ID = Constants.expoConfig?.extra?.KAKAO_NATIVE_APP_KEY;
 const SERVER_REDIRECT_URI = process.env.EXPO_PUBLIC_SERVER_REDIRECT_URI || 'https://server.haroo.site/auth/kakao';
 
 console.log('[LandingScreen] KAKAO_CLIENT_ID:', KAKAO_CLIENT_ID ? 'SET' : 'NOT SET');
