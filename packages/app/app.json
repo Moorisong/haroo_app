@@ -20,10 +20,6 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.haroo.app"
-    },
     "android": {
       "package": "com.haroo.app",
       "adaptiveIcon": {
