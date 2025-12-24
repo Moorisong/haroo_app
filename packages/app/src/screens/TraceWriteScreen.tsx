@@ -50,6 +50,7 @@ export const TraceWriteScreen: React.FC = () => {
     const [writePermission, setWritePermission] = useState<string>('FREE_AVAILABLE');
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [cooldownEndTime, setCooldownEndTime] = useState<Date | null>(null);
+    const [isCheckingPermission, setIsCheckingPermission] = useState(true);
 
     // Location State
     const [locationState, setLocationState] = useState<LocationState | null>(null);
@@ -70,6 +71,7 @@ export const TraceWriteScreen: React.FC = () => {
     );
 
     const checkWritePermission = async () => {
+        setIsCheckingPermission(true);
         try {
             // 위치 확인 (없으면 권한 요청)
             const loc = await LocationService.getCurrentLocation();
@@ -105,6 +107,8 @@ export const TraceWriteScreen: React.FC = () => {
             }
         } catch (error) {
             console.error('Permission check failed:', error);
+        } finally {
+            setIsCheckingPermission(false);
         }
     };
 
@@ -219,6 +223,30 @@ export const TraceWriteScreen: React.FC = () => {
                         >
                             <Text style={styles.cooldownButtonText}>돌아가기</Text>
                         </TouchableOpacity>
+                    </View>
+                </SafeAreaView>
+            </View>
+        );
+    }
+
+    // 권한 체크 중 로딩 화면
+    if (isCheckingPermission) {
+        return (
+            <View style={styles.container}>
+                <BubbleBackground />
+                <SafeAreaView style={styles.safeArea}>
+                    <View style={styles.header}>
+                        <TouchableOpacity
+                            style={styles.backButton}
+                            onPress={() => navigation.goBack()}
+                        >
+                            <Feather name="x" size={22} color={COLORS.textPrimary} />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>한 줄 남기기</Text>
+                        <View style={styles.submitButton} />
+                    </View>
+                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                        <ActivityIndicator size="large" color={COLORS.accent} />
                     </View>
                 </SafeAreaView>
             </View>
