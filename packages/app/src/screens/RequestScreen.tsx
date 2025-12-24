@@ -185,6 +185,55 @@ export const RequestScreen: React.FC = () => {
         }
     };
 
+    // 테스트용: 결제 없이 서버 API 직접 호출
+    const handleTestRequest = async () => {
+        setStatusMessage(null);
+
+        if (!targetHashId.trim()) {
+            setStatusMessage({ type: 'error', text: '상대방의 ID를 입력해주세요.' });
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            const productId = durationDays === 1
+                ? PRODUCT_IDS.MESSAGE_MODE_1DAY
+                : PRODUCT_IDS.MESSAGE_MODE_3DAY;
+
+            // 테스트 토큰으로 서버 검증 요청
+            const result = await verifyPurchaseWithServer(
+                productId,
+                'test_token_' + Date.now(), // 테스트용 토큰
+                targetHashId.trim()
+            );
+
+            if (result.success) {
+                setStatusMessage({
+                    type: 'success',
+                    text: `[테스트] ${targetHashId.trim()}님에게 메시지 모드를 신청했습니다.`,
+                });
+
+                setTimeout(() => {
+                    navigation.goBack();
+                }, 2000);
+            } else {
+                setStatusMessage({
+                    type: 'error',
+                    text: result.error || '서버 요청 실패',
+                });
+            }
+        } catch (error) {
+            const axiosError = error as AxiosError<{ message: string }>;
+            setStatusMessage({
+                type: 'error',
+                text: axiosError.response?.data?.message || '알 수 없는 오류',
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleIdChange = (text: string) => {
         setTargetHashId(text);
         if (statusMessage) {
@@ -296,6 +345,17 @@ export const RequestScreen: React.FC = () => {
                             onPress={handleRequest}
                             disabled={isSubmitting}
                         />
+
+                        {/* 테스트 버튼 (결제 없이 서버 API 테스트) */}
+                        <TouchableOpacity
+                            style={styles.testButton}
+                            onPress={handleTestRequest}
+                            disabled={isSubmitting}
+                        >
+                            <Text style={styles.testButtonText}>
+                                🧪 [테스트] 결제 없이 신청하기
+                            </Text>
+                        </TouchableOpacity>
                     </View>
                 </KeyboardAvoidingView>
             </ScrollView>
@@ -442,5 +502,16 @@ const styles = StyleSheet.create({
         fontFamily: FONTS.regular,
         color: COLORS.textSecondary,
         lineHeight: 18,
+    },
+    testButton: {
+        marginTop: SPACING.md,
+        paddingVertical: SPACING.sm,
+        alignItems: 'center',
+    },
+    testButtonText: {
+        fontSize: FONT_SIZES.sm,
+        fontFamily: FONTS.regular,
+        color: COLORS.textTertiary,
+        textDecorationLine: 'underline',
     },
 });
