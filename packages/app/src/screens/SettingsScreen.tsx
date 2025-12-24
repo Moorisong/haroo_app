@@ -519,12 +519,9 @@ const styles = StyleSheet.create({
         fontFamily: FONTS.medium,
         color: COLORS.textSecondary,
     },
-    // 로그아웃 스타일
     logoutSection: {
-        marginTop: SPACING.xxl,
-        paddingTop: SPACING.lg,
-        borderTopWidth: 1,
-        borderTopColor: COLORS.divider,
+        marginTop: SPACING.md,
+        marginBottom: SPACING.md,
         alignItems: 'center',
     },
     logoutButton: {
