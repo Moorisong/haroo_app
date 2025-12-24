@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "nodemon src/server.ts",
     "build": "tsc",
+    "build:pm2": "pm2 stop haroo-server && NODE_OPTIONS=--max_old_space_size=4096 tsc && pm2 start haroo-server",
     "start": "node dist/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
