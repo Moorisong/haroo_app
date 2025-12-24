@@ -22,10 +22,10 @@ export default {
         backgroundColor: "#ffffff"
     },
     ios: {
-        bundleIdentifier: "com.haroo.app"
+        bundleIdentifier: "com.haroo.apps"
     },
     android: {
-        package: "com.haroo.app",
+        package: "com.haroo.app.main",
         adaptiveIcon: {
             foregroundImage: "./assets/adaptive-icon.png",
             backgroundColor: "#ffffff"
@@ -37,6 +37,7 @@ export default {
         favicon: "./assets/haroo_logo.png"
     },
     plugins: [
+        "react-native-iap",
         "expo-font",
         "expo-web-browser",
         [

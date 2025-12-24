@@ -1,4 +1,4 @@
-package com.haroo.app.widget;
+package com.haroo.app.main.widget;
 
 import com.reactnativeandroidwidget.RNWidgetProvider;
 

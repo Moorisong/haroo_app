@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.haroo.app'
+    namespace 'com.haroo.app.main'
     defaultConfig {
-        applicationId 'com.haroo.app'
+        applicationId 'com.haroo.app.main'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -153,6 +153,7 @@ android {
 }
 
 dependencies {
+    implementation "io.github.hyochan.openiap:openiap-google:1.3.16"
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 

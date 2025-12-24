@@ -12,6 +12,7 @@ import userRoutes from './routes/userRoutes';
 import modeRoutes from './routes/modeRoutes';
 import messageRoutes from './routes/messageRoutes';
 import apiRoutes from './routes/apiRoutes';
+import billingRoutes from './routes/billing';
 
 // Middleware
 app.use(express.json());
@@ -26,6 +27,7 @@ app.use('/users', userRoutes);
 app.use('/modes', modeRoutes);
 app.use('/messages', messageRoutes);
 app.use('/api', apiRoutes);
+app.use('/billing', billingRoutes);
 
 import testToolsRoutes from './routes/testTools';
 import { isTestMode } from './utils/testMode';

@@ -1,4 +1,4 @@
-package com.haroo.app;
+package com.haroo.app.main;
 
 import com.reactnativeandroidwidget.RNWidgetConfigurationActivity;
 

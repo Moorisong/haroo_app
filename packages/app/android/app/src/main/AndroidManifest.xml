@@ -6,6 +6,7 @@
   <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
   <uses-permission android:name="android.permission.VIBRATE"/>
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+  <uses-permission android:name="com.android.vending.BILLING"/>
   <queries>
     <intent>
       <action android:name="android.intent.action.VIEW"/>
@@ -38,14 +39,14 @@
     <receiver android:name=".widget.HarooWidgetSmall" android:exported="false" android:label="하루 (소)">
       <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
-        <action android:name="com.haroo.app.WIDGET_CLICK"/>
+        <action android:name="com.haroo.app.main.WIDGET_CLICK"/>
       </intent-filter>
       <meta-data android:name="android.appwidget.provider" android:resource="@xml/widgetprovider_haroowidgetsmall"/>
     </receiver>
     <receiver android:name=".widget.HarooWidgetMedium" android:exported="false" android:label="하루 (중)">
       <intent-filter>
         <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
-        <action android:name="com.haroo.app.WIDGET_CLICK"/>
+        <action android:name="com.haroo.app.main.WIDGET_CLICK"/>
       </intent-filter>
       <meta-data android:name="android.appwidget.provider" android:resource="@xml/widgetprovider_haroowidgetmedium"/>
     </receiver>

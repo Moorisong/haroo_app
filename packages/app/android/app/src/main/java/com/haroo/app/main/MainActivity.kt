@@ -1,4 +1,4 @@
-package com.haroo.app
+package com.haroo.app.main
 
 import android.os.Build
 import android.os.Bundle

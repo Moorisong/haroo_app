@@ -14,7 +14,7 @@
     android:initialLayout="@layout/rn_widget"
 
 
-    android:configure="com.haroo.app.WidgetConfigurationActivity"
+    android:configure="com.haroo.app.main.WidgetConfigurationActivity"
     android:widgetFeatures="reconfigurable|configuration_optional"
 
     android:updatePeriodMillis="1800000"

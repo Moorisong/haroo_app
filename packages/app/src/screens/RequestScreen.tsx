@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -15,8 +15,17 @@ import { COLORS, FONTS, FONT_SIZES, SPACING } from '../constants/theme';
 import { MESSAGES } from '../constants/messages';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { BubbleBackground } from '../components/BubbleBackground';
-import { requestMode } from '../services/api';
 import { AxiosError } from 'axios';
+import {
+    initBilling,
+    endBilling,
+    buyProduct,
+    verifyPurchaseWithServer,
+    completePurchase,
+    setupPurchaseListeners,
+    PRODUCT_IDS,
+    type Purchase,
+} from '../services/billing';
 
 export const RequestScreen: React.FC = () => {
     const navigation = useNavigation();
@@ -26,25 +35,131 @@ export const RequestScreen: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+    // ref로 최신 targetHashId 유지 (리스너 클로저 문제 방지)
+    const targetHashIdRef = useRef(targetHashId);
+    useEffect(() => {
+        targetHashIdRef.current = targetHashId;
+    }, [targetHashId]);
+
+    // IAP 초기화 및 리스너 설정
+    useEffect(() => {
+        initBilling();
+
+        if (Platform.OS !== 'web') {
+            setupPurchaseListeners(
+                // 구매 완료 핸들러
+                async (purchase: Purchase) => {
+                    console.log('[RequestScreen] Purchase updated:', purchase);
+
+                    const currentTargetHashId = targetHashIdRef.current;
+
+                    if (purchase.purchaseToken && currentTargetHashId) {
+                        // 서버에 검증 요청
+                        const result = await verifyPurchaseWithServer(
+                            purchase.productId,
+                            purchase.purchaseToken,
+                            currentTargetHashId
+                        );
+
+                        if (result.success) {
+                            // 트랜잭션 완료 처리
+                            await completePurchase(purchase);
+
+                            setStatusMessage({
+                                type: 'success',
+                                text: `${currentTargetHashId}님에게 메시지 모드를 신청했습니다.`,
+                            });
+
+                            setTimeout(() => {
+                                navigation.goBack();
+                            }, 2000);
+                        } else {
+                            setStatusMessage({
+                                type: 'error',
+                                text: result.error || '결제 검증에 실패했습니다.',
+                            });
+                        }
+
+                        setIsSubmitting(false);
+                    }
+                },
+                // 구매 에러 핸들러
+                (error: any) => {
+                    console.log('[RequestScreen] Purchase error:', error);
+
+                    if (error.code !== 'E_USER_CANCELLED') {
+                        setStatusMessage({
+                            type: 'error',
+                            text: '결제 중 오류가 발생했습니다.',
+                        });
+                    }
+
+                    setIsSubmitting(false);
+                }
+            );
+        }
+
+        return () => {
+            endBilling();
+        };
+    }, [navigation, targetHashId]);
+
     const handleRequest = async () => {
-        setStatusMessage(null); // Clear previous messages
+        setStatusMessage(null);
+
         if (!targetHashId.trim()) {
             setStatusMessage({ type: 'error', text: '상대방의 ID를 입력해주세요.' });
             return;
         }
 
         setIsSubmitting(true);
-        try {
-            await requestMode({
-                targetHashId: targetHashId.trim(),
-                durationDays,
-            });
 
-            setStatusMessage({ type: 'success', text: `${targetHashId.trim()}님에게 메시지 모드를 신청했습니다.` });
-            // Optionally navigate after a short delay for user to read message
-            setTimeout(() => {
-                navigation.goBack();
-            }, 2000);
+        try {
+            // 상품 ID 결정
+            const productId = durationDays === 1
+                ? PRODUCT_IDS.MESSAGE_MODE_1DAY
+                : PRODUCT_IDS.MESSAGE_MODE_3DAY;
+
+            // 결제 요청
+            const purchaseResult = await buyProduct(productId);
+
+            if (!purchaseResult.success) {
+                setStatusMessage({
+                    type: 'error',
+                    text: purchaseResult.error || '결제가 취소되었습니다.',
+                });
+                setIsSubmitting(false);
+                return;
+            }
+
+            // 웹 환경에서는 바로 서버 검증
+            if (Platform.OS === 'web' && purchaseResult.purchaseToken) {
+                const result = await verifyPurchaseWithServer(
+                    productId,
+                    purchaseResult.purchaseToken,
+                    targetHashId.trim()
+                );
+
+                if (result.success) {
+                    setStatusMessage({
+                        type: 'success',
+                        text: `${targetHashId.trim()}님에게 메시지 모드를 신청했습니다.`,
+                    });
+
+                    setTimeout(() => {
+                        navigation.goBack();
+                    }, 2000);
+                } else {
+                    setStatusMessage({
+                        type: 'error',
+                        text: result.error || '결제 검증에 실패했습니다.',
+                    });
+                }
+
+                setIsSubmitting(false);
+            }
+
+            // Android에서는 purchaseUpdatedListener에서 처리됨
 
         } catch (error) {
             const axiosError = error as AxiosError<{ message: string }>;
@@ -55,7 +170,7 @@ export const RequestScreen: React.FC = () => {
                 displayMessage = `${MESSAGES.REQUEST_UNAVAILABLE.SELF_BUSY.TITLE}\n${MESSAGES.REQUEST_UNAVAILABLE.SELF_BUSY.SUB}`;
             } else if (errorMessage === 'The recipient is currently busy with another mode') {
                 displayMessage = MESSAGES.REQUEST_UNAVAILABLE.PEER_BUSY.TITLE;
-            } else if (errorMessage === 'User not found') {
+            } else if (errorMessage === 'User not found' || errorMessage === 'Recipient not found') {
                 displayMessage = `${MESSAGES.ID_INPUT.NOT_FOUND.TITLE}\n${MESSAGES.ID_INPUT.NOT_FOUND.SUB}`;
             } else if (errorMessage === 'Cannot request mode to yourself') {
                 displayMessage = MESSAGES.ID_INPUT.SELF.TITLE;
@@ -64,10 +179,8 @@ export const RequestScreen: React.FC = () => {
             } else if (errorMessage === 'You have blocked this user') {
                 displayMessage = '차단한 사용자에게는\n메시지 모드를 신청할 수 없어요.\n설정에서 차단을 해제하면 다시 신청할 수 있어요.';
             }
-            // Add more specific error messages as needed based on backend responses
 
             setStatusMessage({ type: 'error', text: displayMessage });
-        } finally {
             setIsSubmitting(false);
         }
     };

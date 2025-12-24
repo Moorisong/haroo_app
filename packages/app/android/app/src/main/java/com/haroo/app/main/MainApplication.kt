@@ -1,4 +1,4 @@
-package com.haroo.app
+package com.haroo.app.main
 
 import android.app.Application
 import android.content.res.Configuration
