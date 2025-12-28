@@ -1,2 +1,5 @@
 # Build output
 dist/
+
+# PM2 ecosystem config (environment-specific)
+ecosystem.config.js
